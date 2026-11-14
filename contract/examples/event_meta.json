@@ -1,0 +1,17 @@
+{
+  "protocol_version": 1,
+  "type": "meta",
+  "session_id": "contract-example-session",
+  "event_index": 0,
+  "trace_id": "trace-example-1",
+  "resume_token": "local-resume-token-placeholder",
+  "resume_ttl_seconds": 600,
+  "received_bytes": 0,
+  "audio_duration_ms": 0,
+  "audio": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "sample_format": "pcm_s16le",
+    "frame_ms": 100
+  }
+}

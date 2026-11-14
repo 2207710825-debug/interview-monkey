@@ -1,0 +1,7 @@
+{
+  "type": "resume",
+  "session_id": "contract-example-session",
+  "resume_token": "local-resume-token-placeholder",
+  "last_audio_seq": 4,
+  "last_event_index": 12
+}

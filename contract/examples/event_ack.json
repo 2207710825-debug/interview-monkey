@@ -1,0 +1,8 @@
+{
+  "protocol_version": 1,
+  "type": "ack",
+  "session_id": "contract-example-session",
+  "event_index": 4,
+  "seq": 0,
+  "received_bytes": 3200
+}

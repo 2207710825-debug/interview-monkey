@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interview-monkey.local/schemas/server_event.schema.json",
+  "title": "Interview Monkey v1 server WebSocket event",
+  "oneOf": [
+    { "$ref": "#/$defs/meta" },
+    { "$ref": "#/$defs/token" },
+    { "$ref": "#/$defs/done" },
+    { "$ref": "#/$defs/error" },
+    { "$ref": "#/$defs/ack" },
+    { "$ref": "#/$defs/pong" }
+  ],
+  "$defs": {
+    "common": {
+      "type": "object",
+      "properties": {
+        "protocol_version": { "const": 1 },
+        "session_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "event_index": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["protocol_version", "session_id", "event_index"]
+    },
+    "meta": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "type": { "const": "meta" },
+            "trace_id": { "type": "string", "minLength": 1 },
+            "resume_token": { "type": "string", "minLength": 16, "maxLength": 512 },
+            "resume_ttl_seconds": { "const": 600 },
+            "received_bytes": { "type": "integer", "minimum": 0 },
+            "audio_duration_ms": { "type": "number", "minimum": 0 },
+            "audio": {
+              "type": "object",
+              "properties": {
+                "sample_rate": { "const": 16000 },
+                "channels": { "const": 1 },
+                "sample_format": { "const": "pcm_s16le" },
+                "frame_ms": { "const": 100 }
+              },
+              "required": ["sample_rate", "channels", "sample_format", "frame_ms"]
+            }
+          },
+          "required": ["type", "trace_id", "resume_token", "resume_ttl_seconds", "received_bytes", "audio_duration_ms", "audio"]
+        }
+      ]
+    },
+    "token": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "type": { "const": "token" },
+            "trace_id": { "type": "string", "minLength": 1 },
+            "stream": { "enum": ["transcript", "question", "answer"] },
+            "index": { "type": "integer", "minimum": 0 },
+            "delta": { "type": "string" },
+            "is_partial": { "type": "boolean" },
+            "column": { "enum": ["transcript", "current_question", "answer"] },
+            "utterance_id": { "type": "string", "minLength": 1 }
+          },
+          "required": ["type", "trace_id", "stream", "index", "delta", "is_partial", "column"]
+        }
+      ]
+    },
+    "done": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "type": { "const": "done" },
+            "trace_id": { "type": "string", "minLength": 1 },
+            "stats": {
+              "type": "object",
+              "properties": {
+                "received_bytes": { "type": "integer", "minimum": 0 },
+                "audio_duration_ms": { "type": "number", "minimum": 0 },
+                "frames_received": { "type": "integer", "minimum": 0 },
+                "last_audio_seq": { "type": "integer", "minimum": -1, "maximum": 4294967295 },
+                "elapsed_ms": { "type": "number", "minimum": 0 }
+              },
+              "required": ["received_bytes", "audio_duration_ms", "frames_received", "last_audio_seq", "elapsed_ms"]
+            }
+          },
+          "required": ["type", "trace_id", "stats"]
+        }
+      ]
+    },
+    "error": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "type": { "const": "error" },
+            "trace_id": { "type": "string", "minLength": 1 },
+            "code": { "enum": ["AUTH_REQUIRED", "AUTH_INVALID", "INVALID_CONTROL", "INVALID_FRAME", "FRAME_TOO_LARGE", "CHECKSUM_MISMATCH", "SEQ_GAP", "SESSION_NOT_FOUND", "RESUME_EXPIRED", "HEARTBEAT_TIMEOUT", "RATE_LIMITED", "INTERNAL"] },
+            "message": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "retryable": { "type": "boolean" }
+          },
+          "required": ["type", "code", "message", "retryable"]
+        }
+      ]
+    },
+    "ack": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "type": { "const": "ack" },
+            "seq": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+            "received_bytes": { "type": "integer", "minimum": 0 }
+          },
+          "required": ["type", "seq", "received_bytes"]
+        }
+      ]
+    },
+    "pong": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": { "type": { "const": "pong" }, "nonce": { "type": "string", "minLength": 1, "maxLength": 128 } },
+          "required": ["type", "nonce"]
+        }
+      ]
+    }
+  }
+}

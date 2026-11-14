@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interview-monkey.local/schemas/control.schema.json",
+  "title": "Interview Monkey v1 client control frame",
+  "oneOf": [
+    { "$ref": "#/$defs/start" },
+    { "$ref": "#/$defs/pause" },
+    { "$ref": "#/$defs/resume" },
+    { "$ref": "#/$defs/stop" },
+    { "$ref": "#/$defs/ack" },
+    { "$ref": "#/$defs/ping" }
+  ],
+  "$defs": {
+    "sessionId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "start": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "type": { "const": "start" },
+        "session_id": { "$ref": "#/$defs/sessionId" },
+        "audio": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "sample_rate": { "const": 16000 },
+            "channels": { "const": 1 },
+            "sample_format": { "const": "pcm_s16le" },
+            "frame_ms": { "const": 100 }
+          },
+          "required": ["sample_rate", "channels", "sample_format", "frame_ms"]
+        }
+      },
+      "required": ["type", "session_id", "audio"]
+    },
+    "pause": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": { "type": { "const": "pause" }, "session_id": { "$ref": "#/$defs/sessionId" } },
+      "required": ["type", "session_id"]
+    },
+    "resume": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "type": { "const": "resume" },
+        "session_id": { "$ref": "#/$defs/sessionId" },
+        "resume_token": { "type": "string", "minLength": 16, "maxLength": 512 },
+        "last_audio_seq": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+        "last_event_index": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["type", "session_id", "resume_token", "last_audio_seq", "last_event_index"]
+    },
+    "stop": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "type": { "const": "stop" },
+        "session_id": { "$ref": "#/$defs/sessionId" },
+        "last_audio_seq": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+      },
+      "required": ["type", "session_id"]
+    },
+    "ack": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "type": { "const": "ack" },
+        "session_id": { "$ref": "#/$defs/sessionId" },
+        "event_index": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["type", "session_id", "event_index"]
+    },
+    "ping": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "type": { "const": "ping" },
+        "session_id": { "$ref": "#/$defs/sessionId" },
+        "nonce": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "required": ["type", "session_id", "nonce"]
+    }
+  }
+}

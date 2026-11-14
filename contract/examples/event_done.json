@@ -1,0 +1,14 @@
+{
+  "protocol_version": 1,
+  "type": "done",
+  "session_id": "contract-example-session",
+  "event_index": 2,
+  "trace_id": "trace-example-1",
+  "stats": {
+    "received_bytes": 3200,
+    "audio_duration_ms": 100,
+    "frames_received": 1,
+    "last_audio_seq": 0,
+    "elapsed_ms": 125
+  }
+}

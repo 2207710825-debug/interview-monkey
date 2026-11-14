@@ -1,0 +1,5 @@
+{
+  "subprotocol": "interview-monkey.v1",
+  "authorization_scheme": "Bearer",
+  "token": "DEV_TOKEN_PLACEHOLDER"
+}

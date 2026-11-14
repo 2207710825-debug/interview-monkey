@@ -1,0 +1,4 @@
+{
+  "event": "token",
+  "data": { "delta": "Kafka 使用副本机制。" }
+}

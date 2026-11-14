@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interview-monkey.local/schemas/audio_frame.schema.json",
+  "title": "Interview Monkey v1 decoded audio frame",
+  "description": "Decoded JSON representation for contract tests. The WebSocket wire frame is a 36-byte little-endian binary header followed by raw PCM bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "seq": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+    "timestamp_ms": { "type": "integer", "minimum": 0 },
+    "sample_rate": { "const": 16000 },
+    "payload_length": { "enum": [0, 3200] },
+    "channel": { "enum": ["mic", "loopback"] },
+    "eof": { "type": "boolean" },
+    "crc32": { "type": "string", "pattern": "^[0-9a-f]{8}$" },
+    "payload_base64": { "type": "string", "contentEncoding": "base64" }
+  },
+  "required": ["version", "seq", "timestamp_ms", "sample_rate", "payload_length", "channel", "eof", "crc32", "payload_base64"],
+  "allOf": [
+    {
+      "if": { "properties": { "eof": { "const": true } }, "required": ["eof"] },
+      "then": { "properties": { "payload_length": { "const": 0 }, "payload_base64": { "const": "" } } },
+      "else": { "properties": { "payload_length": { "const": 3200 } } }
+    }
+  ]
+}

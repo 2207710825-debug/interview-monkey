@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "seq": 1,
+  "timestamp_ms": 100,
+  "sample_rate": 16000,
+  "payload_length": 0,
+  "channel": "mic",
+  "eof": true,
+  "crc32": "9d54b1e6",
+  "payload_base64": ""
+}

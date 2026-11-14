@@ -29,6 +29,16 @@
 | 2026-11-14 07:24 | `git rev-parse HEAD^{tree}` | PowerShell 将花括号表达式解析成了错误参数；提交本身成功，后续用 `git show -s --format=%T HEAD` 读取 tree SHA | 本地 `.git/` |
 | 2026-11-14 07:27 | 根据 GitHub API 返回的分支 SHA 执行 `git update-ref`、`git branch --set-upstream-to`、`git switch -c feat/protocol-contract-mock` | 本地 `main` 与功能分支均跟踪对应远端分支；当前工作区干净。因 Git HTTPS 连接不可用，远端跟踪引用根据已核验 API SHA 设置 | 本地 `.git/` |
 
+## Phase 1：协议契约与 Schema（2026-11-14 UTC）
+
+| UTC 时间 | 命令/操作 | 结论 | 文件 |
+|---|---|---|---|
+| 2026-11-14 07:50 | 读取 `/api/*` 路由、`AudioFrame`、SSE service、出站 ASR WebSocket provider 与前端 SSE handler | 以实际 legacy API 为依据；未改服务端路由。本次新增 v1 是计划契约，明确等 Phase 2 实现 | `engine/realtime/api/app.py`、`engine/realtime/contracts.py`、`engine/realtime/llm/service.py`、`engine/realtime/asr/providers.py`、`web/realtime.html` |
+| 2026-11-14 07:51 | `\.venv-pack\Scripts\python.exe -m pip install -r contract\requirements.txt` | 安装 `jsonschema 4.26.0` 及依赖；contract requirements 同时列出 live 检查使用的 `httpx` | `contract/requirements.txt`（虚拟环境在 `.venv-pack/`，已忽略） |
+| 2026-11-14 07:52 | `\.venv-pack\Scripts\python.exe -m py_compile contract\validate_contract.py`；JSON 标准库解析 `contract/**/*.json` | Python 语法通过，24 个 JSON 文件可解析 | `contract/` |
+| 2026-11-14 07:52 | `\.venv-pack\Scripts\python.exe contract\validate_contract.py` | 19 个示例通过 5 个 Draft 2020-12 Schema；音频示例的解码长度、36 字节头和 CRC32 语义校验通过 | `contract/schemas/`、`contract/examples/` |
+| 2026-11-14 07:53 | 启动 `\.venv-pack\Scripts\python.exe realtime_server.py`；运行 `\.venv-pack\Scripts\python.exe contract\validate_contract.py --live`；停止服务 | 绑定 `127.0.0.1:18765`；`POST /api/answer/stream` 返回 200；288 个 SSE 事件全部符合 legacy Schema（meta=1、token=286、done=1）；未打印回答正文 | `contract/validate_contract.py`、现有 realtime server |
+
 ### 安全边界与后续状态
 
 - 仓库计划设为私有。提交前复核暂存区；确认没有 exe、venv、用户录音或真实凭据后才推送。
