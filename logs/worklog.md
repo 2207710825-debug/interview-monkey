@@ -27,6 +27,7 @@
 | 2026-11-14 07:18 | `gh api --method PUT repos/2207710825-debug/interview-monkey/contents/README.md --input -` | 空仓库 Git Data API 返回 409 后，用内容 API 建立 README 种子提交 `6c0fb3922318cd8bbd27d4e79e35b6ff0f8d1428`；仓库确认是私有，默认分支为 `main` | GitHub 远端 `main` |
 | 2026-11-14 07:23 | GitHub Git Data API 创建唯一 blob、tree、commit 和 refs | 246 个唯一 blob 均返回与本地相同 SHA；277 个文件树 SHA 相同；远端 commit 与本地 `aa821c31cad2e47082fe12c6fc77368789b0605f` 完全一致。私有仓库 `main` 与 `feat/protocol-contract-mock` 均已存在；远端 API 可读到 LFS 模型原始大小 239,233,841 字节 | GitHub 远端、`.git/` |
 | 2026-11-14 07:24 | `git rev-parse HEAD^{tree}` | PowerShell 将花括号表达式解析成了错误参数；提交本身成功，后续用 `git show -s --format=%T HEAD` 读取 tree SHA | 本地 `.git/` |
+| 2026-11-14 07:27 | 根据 GitHub API 返回的分支 SHA 执行 `git update-ref`、`git branch --set-upstream-to`、`git switch -c feat/protocol-contract-mock` | 本地 `main` 与功能分支均跟踪对应远端分支；当前工作区干净。因 Git HTTPS 连接不可用，远端跟踪引用根据已核验 API SHA 设置 | 本地 `.git/` |
 
 ### 安全边界与后续状态
 
