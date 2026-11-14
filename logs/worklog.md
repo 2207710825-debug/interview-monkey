@@ -25,6 +25,8 @@
 | 2026-11-14 07:00 | `\.venv-pack\Scripts\python.exe -m py_compile test_app_api.py test_ollama_e2e.py test_fix_404.py` | 语法检查通过；暂存审查为 277 个文件，0 个 exe/备份/pkg，LFS 8 个唯一 ONNX 对象（历史版本路径复用相同对象） | 3 个脱敏测试脚本、Git 暂存区 |
 | 2026-11-14 07:18 | `git push -u origin main`；`git ls-remote --heads origin`；`gh api repos/2207710825-debug/interview-monkey/branches` | LFS 的 8 个对象（470 MB）上传完成；Git 引用推送因 `github.com:443` 连接中断/超时而失败，远端当时没有分支。`curl` 到 `github.com` 超时，但 GitHub API 可用 | GitHub 远端、`.git/` |
 | 2026-11-14 07:18 | `gh api --method PUT repos/2207710825-debug/interview-monkey/contents/README.md --input -` | 空仓库 Git Data API 返回 409 后，用内容 API 建立 README 种子提交 `6c0fb3922318cd8bbd27d4e79e35b6ff0f8d1428`；仓库确认是私有，默认分支为 `main` | GitHub 远端 `main` |
+| 2026-11-14 07:23 | GitHub Git Data API 创建唯一 blob、tree、commit 和 refs | 246 个唯一 blob 均返回与本地相同 SHA；277 个文件树 SHA 相同；远端 commit 与本地 `aa821c31cad2e47082fe12c6fc77368789b0605f` 完全一致。私有仓库 `main` 与 `feat/protocol-contract-mock` 均已存在；远端 API 可读到 LFS 模型原始大小 239,233,841 字节 | GitHub 远端、`.git/` |
+| 2026-11-14 07:24 | `git rev-parse HEAD^{tree}` | PowerShell 将花括号表达式解析成了错误参数；提交本身成功，后续用 `git show -s --format=%T HEAD` 读取 tree SHA | 本地 `.git/` |
 
 ### 安全边界与后续状态
 
