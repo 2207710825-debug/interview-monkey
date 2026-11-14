@@ -962,6 +962,118 @@ class Api:
         windows[0].minimize()
         return True
 
+    def restore_window(self):
+        """恢复主窗口，供顶部快捷键调用。"""
+        windows = webview.windows
+        if not windows:
+            return False
+        windows[0].restore()
+        return True
+
+
+class GlobalWindowHotkeys:
+    """注册 Windows 全局快捷键，让最小化后也能恢复窗口。"""
+
+    WM_HOTKEY = 0x0312
+    WM_QUIT = 0x0012
+    MOD_CONTROL = 0x0002
+    MOD_SHIFT = 0x0004
+    MOD_NOREPEAT = 0x4000
+    HOTKEY_MINIMIZE = 1
+    HOTKEY_RESTORE = 2
+
+    def __init__(self, window, title, logger=_log):
+        self.window = window
+        self.title = title
+        self.logger = logger
+        self._thread_id = 0
+        self._thread = None
+
+    def start(self):
+        self._thread = threading.Thread(
+            target=self._message_loop,
+            name="面试猴全局快捷键",
+            daemon=True,
+        )
+        self._thread.start()
+
+    def stop(self, *_args, **_kwargs):
+        if not self._thread_id:
+            return
+        try:
+            import ctypes
+            from ctypes import wintypes
+            user32 = ctypes.WinDLL("user32", use_last_error=True)
+            user32.PostThreadMessageW.argtypes = [wintypes.DWORD, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+            user32.PostThreadMessageW.restype = wintypes.BOOL
+            user32.PostThreadMessageW(self._thread_id, self.WM_QUIT, 0, 0)
+        except Exception as exc:
+            self.logger("[hotkey] stop failed: %s" % exc)
+
+    def _message_loop(self):
+        import ctypes
+        from ctypes import wintypes
+
+        user32 = ctypes.WinDLL("user32", use_last_error=True)
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        user32.RegisterHotKey.argtypes = [wintypes.HWND, ctypes.c_int, wintypes.UINT, wintypes.UINT]
+        user32.RegisterHotKey.restype = wintypes.BOOL
+        user32.UnregisterHotKey.argtypes = [wintypes.HWND, ctypes.c_int]
+        user32.UnregisterHotKey.restype = wintypes.BOOL
+        user32.GetMessageW.argtypes = [ctypes.POINTER(wintypes.MSG), wintypes.HWND, wintypes.UINT, wintypes.UINT]
+        user32.GetMessageW.restype = wintypes.BOOL
+        user32.PeekMessageW.argtypes = [ctypes.POINTER(wintypes.MSG), wintypes.HWND, wintypes.UINT, wintypes.UINT, wintypes.UINT]
+        user32.PeekMessageW.restype = wintypes.BOOL
+        user32.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
+        user32.FindWindowW.restype = wintypes.HWND
+        user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+        user32.ShowWindow.restype = wintypes.BOOL
+        user32.SetForegroundWindow.argtypes = [wintypes.HWND]
+        user32.SetForegroundWindow.restype = wintypes.BOOL
+        kernel32.GetCurrentThreadId.restype = wintypes.DWORD
+
+        msg = wintypes.MSG()
+        user32.PeekMessageW(ctypes.byref(msg), None, 0, 0, 0)  # 建立本线程消息队列
+        self._thread_id = kernel32.GetCurrentThreadId()
+        self.logger("[hotkey] message thread started id=%d" % self._thread_id)
+        modifiers = self.MOD_CONTROL | self.MOD_SHIFT | self.MOD_NOREPEAT
+        registrations = []
+        for hotkey_id, virtual_key, label in (
+            (self.HOTKEY_MINIMIZE, 0x28, "Ctrl+Shift+Down"),
+            (self.HOTKEY_RESTORE, 0x26, "Ctrl+Shift+Up"),
+        ):
+            ctypes.set_last_error(0)
+            if user32.RegisterHotKey(None, hotkey_id, modifiers, virtual_key):
+                registrations.append(hotkey_id)
+                self.logger("[hotkey] registered: %s" % label)
+            else:
+                self.logger("[hotkey] register failed: %s win32_error=%d" % (label, ctypes.get_last_error()))
+
+        try:
+            if not registrations:
+                return
+            while True:
+                result = user32.GetMessageW(ctypes.byref(msg), None, 0, 0)
+                if result <= 0:
+                    break
+                if msg.message != self.WM_HOTKEY:
+                    continue
+                try:
+                    if msg.wParam == self.HOTKEY_MINIMIZE:
+                        self.window.minimize()
+                    elif msg.wParam == self.HOTKEY_RESTORE:
+                        self.window.restore()
+                        hwnd = user32.FindWindowW(None, self.title)
+                        if hwnd:
+                            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                            user32.SetForegroundWindow(hwnd)
+                except Exception as exc:
+                    self.logger("[hotkey] action failed id=%s error=%s" % (msg.wParam, exc))
+        finally:
+            for hotkey_id in registrations:
+                user32.UnregisterHotKey(None, hotkey_id)
+            self._thread_id = 0
+
 
 def _show_fatal(title, message):
     """启动失败时尽量让用户看见原因：优先弹原生消息框，退化为打印。
@@ -1019,6 +1131,9 @@ def main():
         min_size=(920, 600),
         background_color="#f3efe8",
     )
+    window_hotkeys = GlobalWindowHotkeys(main_window, window_title, logger=_log)
+    main_window.events.closed += window_hotkeys.stop
+    window_hotkeys.start()
     # before_show 阶段先保护再显示；恢复、跨屏和句柄重建后由后台巡检重申。
     window_security = WindowSecurityGuard(window_title, logger=_log, audit_interval=2.0)
     window_security.bind_pywebview(main_window)

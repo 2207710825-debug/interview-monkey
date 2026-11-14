@@ -65,3 +65,4 @@
 | 2026-11-14 08:50 | 活动 session 二次恢复保护合入快照后，从 `deliverables/server` 启动 `realtime_server.py --mock` 并发送单帧 | 启动于 `127.0.0.1:18767`；1 会话、3200 字节，ACK p50 1.31ms，done 成功 | `deliverables/server/`、`deliverables/logs/phase3_verification.txt` |
 | 2026-11-14 09:01 | `gh api` Git Data API 发布并校验 Phase 2/3 两个提交对象与功能分支引用 | 远端 `feat/protocol-contract-mock` 与本地文件树一致；默认分支 `main` 保持原 SHA | GitHub `feat/protocol-contract-mock` |
 | 2026-11-14 12:33 | `node --check` 检查内嵌脚本、Python `compile()` 检查启动器；PyInstaller 构建至 `dist-shortcut` 并从 EXE 归档核对资源 | 检查通过；EXE 内含 Ctrl+Shift+M 提示、前端按钮和 `minimize_window` 调用；旧 exe 未覆盖 | `renderer/index.html`、`面试猴.py`、`dist-shortcut/面试猴.exe` |
+| 2026-11-14 13:38 | `面试猴.py` 注册 Win32 全局 `Ctrl+Shift+Down/Up`，前端同步显示快捷键并保留页面焦点回退；重新生成 `dist-shortcut\面试猴.exe` | Python 与 2 段内嵌 JS 语法检查、`git diff --check` 通过；EXE 运行日志确认两个 RegisterHotKey 成功；投递 `WM_HOTKEY` 验证最小化/恢复处理器成功。`SendInput` 未触发 `WM_HOTKEY`，故真实物理按键未端到端验证 | `面试猴.py`、`renderer/index.html`、`dist-shortcut\面试猴.exe` |
