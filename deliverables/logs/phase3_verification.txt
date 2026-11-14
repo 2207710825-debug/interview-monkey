@@ -1,0 +1,47 @@
+面试猴 Phase 2/3 实际验证记录
+日期：2026-11-14 UTC
+工作区：E:\面试猴\面试猴-app
+
+[Phase 0 基线，worklog.md 中的实际记录]
+命令：.\.venv-pack\Scripts\python.exe -m pytest -q tests
+结果：125 passed, 177 subtests passed in 25.91s
+
+命令：python -m pytest -q（仓库根目录）
+结果：pytest collection INTERNALERROR / no tests ran；根级 test_app_api.py 导入时调用 sys.exit(0)。未在本任务修改该既有问题。
+
+[最终完整回归]
+命令：.\.venv-pack\Scripts\python.exe -m pytest -q tests
+结果：136 passed, 68 warnings, 177 subtests passed in 17.11s
+详细终端输出：pytest-final.txt
+警告：websockets.legacy 与 Uvicorn 的 websockets 适配器弃用提示；未导致测试失败。
+
+[Schema 示例]
+命令：.\.venv-pack\Scripts\python.exe contract\validate_contract.py
+输出：EXAMPLES_PASS count=19 schemas=5
+
+[真实 Mock 服务 50 路压力]
+启动命令：$env:DEV_TOKEN='local-mock-token'; $env:MH_REALTIME_PORT='18765'; .\.venv-pack\Scripts\python.exe realtime_server.py --mock
+推流命令：.\.venv-pack\Scripts\python.exe tests\sim_client.py --url ws://127.0.0.1:18765/v1/realtime --concurrency 50 --duration 30
+实际输出：{"concurrency":50,"requested_duration_seconds":30.0,"sessions_completed":50,"total_audio_frames":15000,"total_received_bytes":48000000,"p50_ack_ms":28.139,"p95_ack_ms":67.321,"wall_seconds":49.468,"all_sessions_isolated":true}
+详细模拟器输出：sim50x30.txt
+
+[桌面前端 SSE 对齐]
+命令：.\.venv-pack\Scripts\python.exe tests\frontend_alignment.py --base-url http://127.0.0.1:18765
+实际输出：{"result":"ALIGNMENT_PASS","events":8,"transcript_events":1,"question_events":1,"answer_event_order":["meta","token","token","token","done"]}
+日志：frontend_mock_alignment.jsonl
+浏览器实测：点击现有页面“开始采集”后，实时转写、当前问题、来源标签和分段回答均显示；状态由 stopped/idle 更新为 capturing/connected。
+
+[默认真实服务兼容性]
+启动命令：$env:MH_REALTIME_PORT='18766'; .\.venv-pack\Scripts\python.exe realtime_server.py
+检查输出：200 sse stopped False
+默认 app 路由检查：/v1/realtime=False
+
+[独立交付快照]
+从 deliverables\server 启动：应用启动完成并绑定 127.0.0.1:18767。
+使用根 tests\sim_client.py 对快照服务单会话联调：sessions_completed=1、total_audio_frames=1、total_received_bytes=3200、all_sessions_isolated=true。
+同会话活动连接保护更新后复测：sessions_completed=1、total_received_bytes=3200、p50_ack_ms=1.31、wall_seconds=0.128。
+
+[已修复的首次联调问题]
+- 首次直接执行 tests\sim_client.py 时，Python 未将项目根放入 sys.path；脚本已按自身路径加入项目根，独立执行现通过。
+- 首轮协议测试暴露异步连接包装、Uvicorn 握手统一 403、断连故障重复触发和 delay 测试漏发 EOF；均已修正，完整回归最终全通过。
+- 最终审查发现可对活动 session 建立第二条 resume 连接；实现改为拒绝第二条活动恢复连接，并验证拒绝不污染原会话事件序号。

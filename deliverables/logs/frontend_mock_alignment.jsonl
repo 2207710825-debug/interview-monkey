@@ -1,0 +1,8 @@
+{"source":"legacy_sse","event":"status"}
+{"source":"legacy_sse","event":"transcript","kind":"final","text_chars":20}
+{"source":"legacy_sse","event":"question_decision","is_question":true}
+{"source":"legacy_sse","event":"answer","answer_event":"meta","trace_id":"6406e4ed40d8405684c6133b765d0c0d"}
+{"source":"legacy_sse","event":"answer","answer_event":"token","trace_id":"6406e4ed40d8405684c6133b765d0c0d"}
+{"source":"legacy_sse","event":"answer","answer_event":"token","trace_id":"6406e4ed40d8405684c6133b765d0c0d"}
+{"source":"legacy_sse","event":"answer","answer_event":"token","trace_id":"6406e4ed40d8405684c6133b765d0c0d"}
+{"source":"legacy_sse","event":"answer","answer_event":"done","trace_id":"6406e4ed40d8405684c6133b765d0c0d"}

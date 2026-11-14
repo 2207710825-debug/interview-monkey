@@ -1,0 +1,10 @@
+{
+  "type": "start",
+  "session_id": "contract-example-session",
+  "audio": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "sample_format": "pcm_s16le",
+    "frame_ms": 100
+  }
+}

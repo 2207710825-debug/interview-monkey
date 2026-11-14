@@ -1,0 +1,67 @@
+audio:
+  sample_rate: 16000
+  frame_ms: 20
+  ring_frames: 250
+  mic_agc_enabled: true
+  loopback_agc_enabled: false
+  target_rms_dbfs: -20.0
+  limiter_dbfs: -1.0
+  max_gain_db: 12.0
+
+vad:
+  base_silence_ms: 500
+  fast_silence_ms: 300
+  incomplete_silence_ms: 700
+  pre_roll_ms: 200
+  post_roll_ms: 150
+  max_utterance_ms: 15000
+  energy_threshold: 450
+
+asr:
+  provider: local_sherpa
+  engine: sherpa_transducer
+  websocket_url: ""
+  language: zh-CN
+  hotwords_path: config/glossary.yaml
+  hotword_boost: 1.5
+  two_pass:
+    enabled: true
+    engine: sense_voice
+    timeout_ms: 2500
+  reconnect_attempts: 5
+  heartbeat_seconds: 15
+
+rag:
+  knowledge_path: engine/knowledge
+  top_k: 4
+  min_score: 0.35
+  generic_product_skip_score: 0.75
+  chunk_tokens: 400
+  overlap_ratio: 0.15
+  token_budget: 6000
+
+llm:
+  provider: ollama
+  base_url: http://127.0.0.1:11434/v1
+  model: qwen2.5:3b
+  api_key_env: MH_LLM_API_KEY
+  temperature: 0.2
+  timeout_seconds: 45
+
+postprocess:
+  fuzzy_threshold: 0.86
+  suspicious_threshold: 0.68
+  fragment_min_chars: 4
+  llm_correction:
+    enabled: true
+    timeout_ms: 300
+    confidence_threshold: 0.7
+
+privacy:
+  local_mode: true
+  third_party_consent: false
+
+observability:
+  # 原始语音可能含敏感信息；默认只记问答元数据，不持久化音频。
+  # 开启后，VAD 语音片段保存到本机 LocalAppData，供 scripts/replay.py 回归重放。
+  record_audio_for_replay: false

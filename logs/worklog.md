@@ -44,3 +44,22 @@
 - 仓库计划设为私有。提交前复核暂存区；确认没有 exe、venv、用户录音或真实凭据后才推送。
 - `samples/loop*.wav` 是本地 loopback 录音，因此忽略；`samples/tts*.wav` 与 `eval/asr/samples/` 为合成评测样例，可纳入。
 - 本阶段只建立 GitHub 远端、基线提交和功能分支；Phase 1 协议实现等待用户确认 Phase 0 差距分析。
+
+## Phase 2/3：Mock 协议、联调测试与交付（2026-11-14 UTC）
+
+| UTC 时间 | 命令/操作 | 结论 | 文件 |
+|---|---|---|---|
+| 2026-11-14 08:27 | 新增 `engine/realtime/protocol.py`，实现 36 字节小端音频头、CRC32、payload 长度、序号/重复帧与时间戳校验 | 仅在协议入口增加网络帧验证，不改原 `AudioFrame` | `engine/realtime/protocol.py` |
+| 2026-11-14 08:28 | 新增 `engine/realtime/mock_backend.py` 与 `fixtures/realtime_mock.json` | Mock 回答和转写只读 fixtures；增加 DEV_TOKEN、loopback 检查、600 秒内存恢复、ping/pong、JSONL 脱敏协议日志和故障注入 | `engine/realtime/mock_backend.py`、`fixtures/realtime_mock.json` |
+| 2026-11-14 08:29 | `create_app(..., mock=True)` 增量接入并实现 `realtime_server.py --mock`；常规 `realtime_server.py` 保持默认分支 | `/v1/realtime` 只在 Mock app 注册；现有 SSE API 与前端事件字段保留 | `engine/realtime/api/app.py`、`realtime_server.py` |
+| 2026-11-14 08:30 | 对实际 Uvicorn WebSocket 握手拒绝进行联调 | 当前服务器在不支持 denial response 时对缺失/无效令牌都返回 HTTP 403；契约记录相同状态码及 JSONL 内部原因分类 | `contract/API_CONTRACT.md`、`engine/realtime/mock_backend.py` |
+| 2026-11-14 08:31 | 首轮 `pytest -q tests/test_mock_protocol.py` | 暴露异步连接包装、握手拒绝差异、故障重复触发、脚本导入路径和 delay case EOF 触发问题；逐项修正，没有移除测试 | `tests/test_mock_protocol.py`、`tests/sim_client.py`、`engine/realtime/mock_backend.py` |
+| 2026-11-14 08:32 | `pytest -q tests/test_mock_protocol.py` | 协议、CRC/seq、控制、恢复、鉴权、心跳、延迟、故障注入和 50 session 测试通过；最终全量输出见 `deliverables/logs/pytest-final.txt` | `tests/test_mock_protocol.py` |
+| 2026-11-14 08:33 | 启动 `realtime_server.py --mock`，在浏览器打开 `127.0.0.1:18765` 并点击“开始采集” | 可访问性状态为 capturing/connected；三栏显示 fixture 转写、当前问题、知识来源和分段答案 | `web/realtime.html`（只读验证）、Mock 服务 |
+| 2026-11-14 08:34 | `tests/frontend_alignment.py --base-url http://127.0.0.1:18765` | 输出 `ALIGNMENT_PASS`；SSE 事件为 status、transcript、question_decision、answer(meta/token/token/token/done)；结果写入交付日志 | `tests/frontend_alignment.py`、`deliverables/logs/frontend_mock_alignment.jsonl` |
+| 2026-11-14 08:35 | `tests/sim_client.py --url ws://127.0.0.1:18765/v1/realtime --concurrency 50 --duration 30` | 50/50 session；15,000 个 PCM 帧；48,000,000 字节；ACK p50 28.139 ms、p95 67.321 ms；总计 49.468 秒；各会话统计隔离通过 | `tests/sim_client.py`、`deliverables/logs/sim50x30.txt` |
+| 2026-11-14 08:36 | 从 `deliverables/server` 启动服务快照，并通过 `tests/sim_client.py` 建立 1 路闭环 | 可单独启动；1 帧、3200 字节、done 完成 | `deliverables/server/` |
+| 2026-11-14 08:37 | `\.venv-pack\Scripts\python.exe contract\validate_contract.py` | `EXAMPLES_PASS count=19 schemas=5` | `contract/`、`deliverables/logs/contract-validation.txt` |
+| 2026-11-14 08:38 | `\.venv-pack\Scripts\python.exe -m pytest -q tests` | 最终 `136 passed, 68 warnings, 177 subtests passed in 17.11s`；旧 125 条测试未回归；弃用警告来自 websockets/Uvicorn 适配层 | `tests/`、`deliverables/logs/pytest-final.txt` |
+| 2026-11-14 08:38 | `git diff --check`、交付文件镜像、源码快照核对 | 契约、Schema、examples、所有 tests 文件、副本 server、运行日志、报告均放入 `deliverables/`；只保留 Python 源码快照，不复制模型二进制 | `deliverables/` |
+| 2026-11-14 08:50 | 活动 session 二次恢复保护合入快照后，从 `deliverables/server` 启动 `realtime_server.py --mock` 并发送单帧 | 启动于 `127.0.0.1:18767`；1 会话、3200 字节，ACK p50 1.31ms，done 成功 | `deliverables/server/`、`deliverables/logs/phase3_verification.txt` |

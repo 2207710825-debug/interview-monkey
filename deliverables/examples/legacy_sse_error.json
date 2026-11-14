@@ -1,0 +1,4 @@
+{
+  "event": "error",
+  "data": { "category": "provider", "message": "Local model unavailable.", "retryable": true, "metrics": {} }
+}

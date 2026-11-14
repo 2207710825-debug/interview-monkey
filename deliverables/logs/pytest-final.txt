@@ -1,0 +1,18 @@
+................................................................... [ 49%]
+............................................ [ 81%]
+.........................                                                [100%]
+============================== warnings summary ===============================
+tests/test_mock_protocol.py::TestMockProtocol::test_auth_rejection_status
+  E:\���Ժ�\���Ժ�-app\.venv-pack\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/test_mock_protocol.py::TestMockProtocol::test_auth_rejection_status
+  E:\���Ժ�\���Ժ�-app\.venv-pack\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:41: UvicornDeprecationWarning: The `websockets` implementation is deprecated, and `--ws websockets` will point at the `websockets-sansio` implementation in a future release. Use `--ws websockets-sansio` or `--ws auto` to switch now.
+    warnings.warn(
+
+tests/test_mock_protocol.py: 66 warnings
+  E:\���Ժ�\���Ժ�-app\.venv-pack\Lib\site-packages\websockets\legacy\server.py:1178: DeprecationWarning: remove second argument of ws_handler
+    warnings.warn("remove second argument of ws_handler", DeprecationWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+136 passed, 68 warnings, 177 subtests passed in 17.11s

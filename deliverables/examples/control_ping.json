@@ -1,0 +1,5 @@
+{
+  "type": "ping",
+  "session_id": "contract-example-session",
+  "nonce": "ping-1"
+}

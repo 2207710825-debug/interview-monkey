@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interview-monkey.local/schemas/handshake.schema.json",
+  "title": "Interview Monkey v1 normalized WebSocket handshake",
+  "description": "Schema validation representation only. On the wire these values are HTTP Upgrade headers, not a JSON body.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "subprotocol": { "const": "interview-monkey.v1" },
+    "authorization_scheme": { "const": "Bearer" },
+    "token": { "type": "string", "minLength": 1, "maxLength": 256 }
+  },
+  "required": ["subprotocol", "authorization_scheme", "token"]
+}

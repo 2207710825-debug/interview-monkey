@@ -1,0 +1,1 @@
+{"concurrency":50,"requested_duration_seconds":30.0,"sessions_completed":50,"total_audio_frames":15000,"total_received_bytes":48000000,"p50_ack_ms":28.139,"p95_ack_ms":67.321,"wall_seconds":49.468,"all_sessions_isolated":true}

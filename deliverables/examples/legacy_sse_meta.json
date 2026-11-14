@@ -1,0 +1,14 @@
+{
+  "event": "meta",
+  "data": {
+    "trace_id": "trace-legacy-example",
+    "question": "Kafka 如何保证消息可靠性？",
+    "raw_question": "Kafka 如何保证消息可靠性？",
+    "llm_correction": null,
+    "sources": [],
+    "retrieval_queries": ["Kafka 消息可靠性"],
+    "product_filter_applied": false,
+    "low_confidence": false,
+    "rag_ms": 8.2
+  }
+}

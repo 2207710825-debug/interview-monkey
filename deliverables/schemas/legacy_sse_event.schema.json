@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interview-monkey.local/schemas/legacy_sse_event.schema.json",
+  "title": "Existing /api/answer/stream SSE event envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "event": { "enum": ["meta", "token", "done", "error"] },
+    "data": { "type": "object" }
+  },
+  "required": ["event", "data"],
+  "allOf": [
+    {
+      "if": { "properties": { "event": { "const": "meta" } }, "required": ["event"] },
+      "then": { "properties": { "data": { "$ref": "#/$defs/meta" } } }
+    },
+    {
+      "if": { "properties": { "event": { "const": "token" } }, "required": ["event"] },
+      "then": { "properties": { "data": { "$ref": "#/$defs/token" } } }
+    },
+    {
+      "if": { "properties": { "event": { "const": "done" } }, "required": ["event"] },
+      "then": { "properties": { "data": { "$ref": "#/$defs/done" } } }
+    },
+    {
+      "if": { "properties": { "event": { "const": "error" } }, "required": ["event"] },
+      "then": { "properties": { "data": { "$ref": "#/$defs/error" } } }
+    }
+  ],
+  "$defs": {
+    "metrics": { "type": "object", "additionalProperties": true },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "trace_id": { "type": "string", "minLength": 1 },
+        "question": { "type": "string" },
+        "raw_question": { "type": ["string", "null"] },
+        "llm_correction": { "type": ["object", "null"] },
+        "sources": { "type": "array", "items": { "type": "object" } },
+        "retrieval_queries": { "type": "array" },
+        "product_filter_applied": { "type": "boolean" },
+        "low_confidence": { "type": "boolean" },
+        "rag_ms": { "type": "number", "minimum": 0 }
+      },
+      "required": ["trace_id", "question", "raw_question", "llm_correction", "sources", "retrieval_queries", "product_filter_applied", "low_confidence", "rag_ms"]
+    },
+    "token": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": { "delta": { "type": "string" } },
+      "required": ["delta"]
+    },
+    "done": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "status": { "enum": ["done", "interrupted"] },
+        "pieces": { "type": "integer", "minimum": 0 },
+        "metrics": { "$ref": "#/$defs/metrics" }
+      },
+      "required": ["status", "metrics"]
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "category": { "type": "string", "minLength": 1 },
+        "message": { "type": "string" },
+        "retryable": { "type": "boolean" },
+        "metrics": { "$ref": "#/$defs/metrics" }
+      },
+      "required": ["category", "message", "retryable", "metrics"]
+    }
+  }
+}
