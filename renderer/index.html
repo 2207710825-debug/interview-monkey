@@ -43,10 +43,11 @@
     display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid var(--line);
     padding:10px 16px;flex-wrap:wrap;
   }
-  .chip{display:flex;flex-direction:column;align-items:center;background:#faf7f1;border:1px solid var(--line);border-radius:10px;padding:5px 12px;min-width:86px;cursor:pointer;}
+  .chip{display:flex;flex-direction:column;align-items:center;background:#faf7f1;border:1px solid var(--line);border-radius:10px;padding:5px 12px;min-width:86px;cursor:pointer;font:inherit;color:var(--ink);}
   .chip b{font-size:13px;}
   .chip span{font-size:10px;color:var(--sub);line-height:1.3;text-align:center;}
   .chip:hover{border-color:var(--brand);}
+  .chip:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
   .chip.primary{background:var(--brand-soft);border-color:var(--brand);}
   .chip.primary b{color:var(--brand-dark);}
   .top-right{margin-left:auto;display:flex;gap:8px;align-items:center;}
@@ -300,6 +301,7 @@
       <div class="chip" id="chipAsk" title="提问/加入记录"><b>Ctrl+↵</b><span>提问 · 加入记录</span></div>
       <div class="chip" id="chipFind" title="搜索题库"><b>Ctrl+F</b><span>搜索题库</span></div>
       <div class="chip" title="切换模块"><b>Ctrl+1~4</b><span>会议 · 纪要 · 解答 · 陪练</span></div>
+      <button class="chip" id="chipMinimize" type="button" title="Ctrl+Shift+M 最小化窗口"><b>Ctrl+Shift+M</b><span>最小化窗口</span></button>
       <div class="top-right">
         <button id="btnTop" title="让窗口始终置顶，方便边开会边看">📌 窗口置顶</button>
       </div>
@@ -560,7 +562,7 @@
           </ul>
           <div class="sec-gap"></div>
           <div class="sec-title">快捷键</div>
-          <p class="muted">Ctrl+M 开始/结束会议 · Ctrl+Enter 提问/加入记录 · Ctrl+F 搜索题库 · Ctrl+1~4 切换会议/纪要/解答/陪练 · P 暂停/继续语音监听 · ↑/↓ 切换上一题/下一题 · 顶栏「📌 窗口置顶」可让窗口悬浮。</p>
+          <p class="muted">Ctrl+M 开始/结束会议 · Ctrl+Shift+M 最小化窗口 · Ctrl+Enter 提问/加入记录 · Ctrl+F 搜索题库 · Ctrl+1~4 切换会议/纪要/解答/陪练 · P 暂停/继续语音监听 · ↑/↓ 切换上一题/下一题 · 顶栏「📌 窗口置顶」可让窗口悬浮。</p>
           <div class="sec-gap"></div>
           <div class="sec-title">正直使用</div>
           <p class="muted">面试猴帮你<b>提前准备</b>、练好表达、记清会议；正式面试与考试请勿实时使用。</p>
@@ -622,6 +624,14 @@ btnTop.onclick=async()=>{
   if(!(window.pywebview&&window.pywebview.api)){ alert("请在桌面 App（面试猴.exe）中使用窗口置顶"); return; }
   try{ const on=await window.pywebview.api.toggle_topmost(); btnTop.classList.toggle("on", !!on); btnTop.textContent = on?"📌 已置顶":"📌 窗口置顶"; }catch(e){}
 };
+async function minimizeAppWindow(){
+  if(!(window.pywebview&&window.pywebview.api&&window.pywebview.api.minimize_window)){
+    alert("请在桌面 App（面试猴.exe）中使用窗口最小化"); return;
+  }
+  try{ await window.pywebview.api.minimize_window(); }
+  catch(e){ alert("窗口最小化失败："+(e.message||e)); }
+}
+$("#chipMinimize").onclick=minimizeAppWindow;
 
 /* ================= 会议助手 ================= */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1732,7 +1742,8 @@ if($("#btnCfgRefresh")) $("#btnCfgRefresh").onclick=async()=>{
 
 /* ================= 快捷键 ================= */
 document.addEventListener("keydown",e=>{
-  if(e.ctrlKey && e.key.toLowerCase()==="m"){ e.preventDefault(); toggleRec(); }
+  if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==="m"){ e.preventDefault(); minimizeAppWindow(); }
+  else if(e.ctrlKey && !e.shiftKey && e.key.toLowerCase()==="m"){ e.preventDefault(); toggleRec(); }
   else if(e.ctrlKey && e.key==="Enter"){ e.preventDefault(); if($("#qaInput").value.trim()){ switchMod("qa"); doAsk(); } else if($("#manualBox").value.trim()){ manualAdd(); } }
   else if(e.ctrlKey && e.key.toLowerCase()==="f"){ e.preventDefault(); switchMod("bank"); $("#bankSearch").focus(); }
   else if(e.ctrlKey && ["1","2","3","4"].includes(e.key)){ e.preventDefault(); switchMod(["live","summary","qa","practice"][+e.key-1]); }

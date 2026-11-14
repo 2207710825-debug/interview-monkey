@@ -954,6 +954,14 @@ class Api:
         w.on_top = not getattr(w, "on_top", False)
         return bool(w.on_top)
 
+    def minimize_window(self):
+        """最小化主窗口，供顶部快捷键调用。"""
+        windows = webview.windows
+        if not windows:
+            return False
+        windows[0].minimize()
+        return True
+
 
 def _show_fatal(title, message):
     """启动失败时尽量让用户看见原因：优先弹原生消息框，退化为打印。

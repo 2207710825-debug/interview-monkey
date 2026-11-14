@@ -64,3 +64,4 @@
 | 2026-11-14 08:38 | `git diff --check`、交付文件镜像、源码快照核对 | 契约、Schema、examples、所有 tests 文件、副本 server、运行日志、报告均放入 `deliverables/`；只保留 Python 源码快照，不复制模型二进制 | `deliverables/` |
 | 2026-11-14 08:50 | 活动 session 二次恢复保护合入快照后，从 `deliverables/server` 启动 `realtime_server.py --mock` 并发送单帧 | 启动于 `127.0.0.1:18767`；1 会话、3200 字节，ACK p50 1.31ms，done 成功 | `deliverables/server/`、`deliverables/logs/phase3_verification.txt` |
 | 2026-11-14 09:01 | `gh api` Git Data API 发布并校验 Phase 2/3 两个提交对象与功能分支引用 | 远端 `feat/protocol-contract-mock` 与本地文件树一致；默认分支 `main` 保持原 SHA | GitHub `feat/protocol-contract-mock` |
+| 2026-11-14 12:33 | `node --check` 检查内嵌脚本、Python `compile()` 检查启动器；PyInstaller 构建至 `dist-shortcut` 并从 EXE 归档核对资源 | 检查通过；EXE 内含 Ctrl+Shift+M 提示、前端按钮和 `minimize_window` 调用；旧 exe 未覆盖 | `renderer/index.html`、`面试猴.py`、`dist-shortcut/面试猴.exe` |
