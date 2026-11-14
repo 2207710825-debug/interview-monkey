@@ -7,6 +7,7 @@
   "stats": {
     "received_bytes": 3200,
     "audio_duration_ms": 100,
+    "audio_duration_seconds": 0.1,
     "frames_received": 1,
     "last_audio_seq": 0,
     "elapsed_ms": 125

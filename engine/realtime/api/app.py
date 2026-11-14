@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import AsyncIterator
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, WebSocket
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -25,6 +25,7 @@ from ..mocks import MockLLMProvider
 from ..observability import QALogWriter
 from ..rag.hybrid import HybridRetriever
 from ..rag.ingest import document_category, ingest_directory
+from ..mock_backend import FixtureAnswerService, FixtureCaptureRuntime, MockProtocolServer, MockSettings, load_fixtures
 from .runtime import CaptureRuntime
 
 
@@ -135,17 +136,31 @@ def create_app(
     service: RealtimeAnswerService | None = None,
     runtime: CaptureRuntime | None = None,
     glossary_path: str | Path | None = None,
+    *,
+    mock: bool = False,
+    mock_settings: MockSettings | None = None,
 ) -> FastAPI:
     app = FastAPI(title="面试猴实时语音问答核心", version="2.0.0")
-    app.state.answer_service = service or build_default_service()
     cfg = load_config(PROJECT_ROOT / "config" / "config.yaml")
-    app.state.qa_logger = QALogWriter(record_audio=cfg.observability.record_audio_for_replay)
-    app.state.capture_runtime = runtime or CaptureRuntime(
-        cfg,
-        app.state.answer_service,
-        PROJECT_ROOT,
-        qa_logger=app.state.qa_logger,
-    )
+    app.state.mock_mode = mock
+    if mock:
+        fixtures = load_fixtures(PROJECT_ROOT)
+        settings = mock_settings or MockSettings.from_env()
+        app.state.answer_service = FixtureAnswerService(fixtures, settings.token_delay_ms / 1000)
+        app.state.qa_logger = QALogWriter(record_audio=False)
+        app.state.capture_runtime = runtime or FixtureCaptureRuntime(fixtures, app.state.answer_service)
+        app.state.mock_protocol_server = MockProtocolServer(
+            fixtures, settings, PROJECT_ROOT / "logs" / "mock_protocol.jsonl",
+        )
+    else:
+        app.state.answer_service = service or build_default_service()
+        app.state.qa_logger = QALogWriter(record_audio=cfg.observability.record_audio_for_replay)
+        app.state.capture_runtime = runtime or CaptureRuntime(
+            cfg,
+            app.state.answer_service,
+            PROJECT_ROOT,
+            qa_logger=app.state.qa_logger,
+        )
     configured_glossary = Path(glossary_path or cfg.asr.hotwords_path)
     if not configured_glossary.is_absolute():
         configured_glossary = PROJECT_ROOT / configured_glossary
@@ -223,6 +238,8 @@ def create_app(
 
     @app.get("/api/knowledge")
     async def knowledge_list():
+        if mock:
+            return {"items": [{"name": "本地 Mock 知识样例", "path": "fixture:mock", "category": "mock"}]}
         root = (PROJECT_ROOT / cfg.rag.knowledge_path).resolve()
         files = [
             path for path in root.rglob("*")
@@ -245,6 +262,10 @@ def create_app(
 
     @app.post("/api/knowledge/switch")
     async def knowledge_switch(body: KnowledgeRequest):
+        if mock:
+            if body.path != "fixture:mock":
+                raise HTTPException(404, "Mock 知识样例不存在")
+            return {"ok": True, "path": body.path, "category": "mock", "chunks": 1}
         knowledge_root = (PROJECT_ROOT / cfg.rag.knowledge_path).resolve()
         selected_category = None
         if body.path.startswith("category:"):
@@ -349,5 +370,10 @@ def create_app(
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
+
+    if mock:
+        @app.websocket("/v1/realtime")
+        async def realtime_v1(websocket: WebSocket):
+            await app.state.mock_protocol_server.handle(websocket)
 
     return app

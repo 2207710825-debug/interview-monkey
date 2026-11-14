@@ -9,19 +9,21 @@ import socket
 import sys
 import threading
 import time
+import argparse
 from pathlib import Path
 
 from engine.realtime.api.app import create_app
 
-app = create_app()
+# 避免 `python realtime_server.py --mock` 在解析参数前先构造真实 ASR/RAG 服务。
+app = None if __name__ == "__main__" else create_app()
 
 
-def _run_server() -> None:
+def _run_server(app_instance) -> None:
     """开发模式：保留原有的浏览器调试入口。"""
     import uvicorn
 
     port = int(os.environ.get("MH_REALTIME_PORT", "18765"))
-    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")
+    uvicorn.run(app_instance, host="127.0.0.1", port=port, log_level="info")
 
 
 def _available_port() -> int:
@@ -93,13 +95,13 @@ def _show_startup_error(message: str) -> None:
     print(message, file=sys.stderr)
 
 
-def _run_desktop() -> None:
+def _run_desktop(app_instance) -> None:
     """冻结模式：后台运行 API，并用 pywebview 承载三栏实时页面。"""
     import webview
 
     from engine.window_security import WindowSecurityGuard
 
-    background = BackgroundRealtimeServer()
+    background = BackgroundRealtimeServer(app_instance)
     try:
         url = background.start()
     except Exception:
@@ -130,7 +132,11 @@ def _run_desktop() -> None:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="面试猴本机实时服务")
+    parser.add_argument("--mock", action="store_true", help="使用本地预置 fixtures，不调用 ASR/RAG/LLM")
+    args = parser.parse_args()
+    app = create_app(mock=args.mock)
     if getattr(sys, "frozen", False):
-        _run_desktop()
+        _run_desktop(app)
     else:
-        _run_server()
+        _run_server(app)

@@ -1,0 +1,24 @@
+{
+  "channel": "loopback",
+  "meeting_minutes": "讨论主题：Kafka 消息可靠性。结论：通过副本机制、生产者确认级别、幂等生产者与消费者位点提交共同降低消息丢失风险；具体保障取决于集群配置与业务确认策略。",
+  "transcript": [
+    "今天我们讨论 Kafka 的消息可靠性。"
+  ],
+  "transcript_tokens": [
+    {"delta": "今天我们讨论 Kafka 的消息", "is_partial": true},
+    {"delta": "可靠性。", "is_partial": false}
+  ],
+  "question": "Kafka 如何保证消息可靠性并降低丢失风险？",
+  "question_tokens": [
+    {"delta": "Kafka 如何保证消息可靠性", "is_partial": true},
+    {"delta": "并降低丢失风险？", "is_partial": false}
+  ],
+  "answer_tokens": [
+    "**结论**：Kafka 通过生产者、Broker 副本和消费者位点的配合提高消息可靠性。\n",
+    "**要点**：生产者设置 `acks=all` 并启用幂等；Broker 配置合适的副本数与 `min.insync.replicas`；消费者在业务处理成功后再提交位点。\n",
+    "**边界**：这些配置能降低丢失风险，但不能替代业务侧的幂等处理、故障演练和持久化策略。"
+  ],
+  "sources": [
+    {"chunk_id": "fixture-kafka-reliability", "source": "realtime_mock.json", "section": "Kafka 消息可靠性"}
+  ]
+}

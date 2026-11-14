@@ -8,6 +8,7 @@
   "resume_ttl_seconds": 600,
   "received_bytes": 0,
   "audio_duration_ms": 0,
+  "audio_duration_seconds": 0,
   "audio": {
     "sample_rate": 16000,
     "channels": 1,

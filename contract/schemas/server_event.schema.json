@@ -33,6 +33,7 @@
             "resume_ttl_seconds": { "const": 600 },
             "received_bytes": { "type": "integer", "minimum": 0 },
             "audio_duration_ms": { "type": "number", "minimum": 0 },
+            "audio_duration_seconds": { "type": "number", "minimum": 0 },
             "audio": {
               "type": "object",
               "properties": {
@@ -44,7 +45,7 @@
               "required": ["sample_rate", "channels", "sample_format", "frame_ms"]
             }
           },
-          "required": ["type", "trace_id", "resume_token", "resume_ttl_seconds", "received_bytes", "audio_duration_ms", "audio"]
+          "required": ["type", "trace_id", "resume_token", "resume_ttl_seconds", "received_bytes", "audio_duration_ms", "audio_duration_seconds", "audio"]
         }
       ]
     },
@@ -82,11 +83,12 @@
               "properties": {
                 "received_bytes": { "type": "integer", "minimum": 0 },
                 "audio_duration_ms": { "type": "number", "minimum": 0 },
+                "audio_duration_seconds": { "type": "number", "minimum": 0 },
                 "frames_received": { "type": "integer", "minimum": 0 },
                 "last_audio_seq": { "type": "integer", "minimum": -1, "maximum": 4294967295 },
                 "elapsed_ms": { "type": "number", "minimum": 0 }
               },
-              "required": ["received_bytes", "audio_duration_ms", "frames_received", "last_audio_seq", "elapsed_ms"]
+              "required": ["received_bytes", "audio_duration_ms", "audio_duration_seconds", "frames_received", "last_audio_seq", "elapsed_ms"]
             }
           },
           "required": ["type", "trace_id", "stats"]
