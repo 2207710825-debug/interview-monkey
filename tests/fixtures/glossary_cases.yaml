@@ -1,0 +1,511 @@
+cases:
+- term: 先验框
+  input: 锚定框
+  expected: 先验框
+- term: 锚框
+  input: 毛矿
+  expected: 锚框
+- term: Anchor Box
+  input: anchorbox
+  expected: Anchor Box
+- term: 边界框
+  input: 边界框
+  expected: 边界框
+- term: 候选框
+  input: 候选框
+  expected: 候选框
+- term: 目标检测
+  input: 目标检测
+  expected: 目标检测
+- term: NMS
+  input: N M S
+  expected: NMS
+- term: 非极大值抑制
+  input: 非极大值抑制
+  expected: 非极大值抑制
+- term: Soft-NMS
+  input: Soft NMS
+  expected: Soft-NMS
+- term: IoU
+  input: I O U
+  expected: IoU
+- term: GIoU
+  input: G IoU
+  expected: GIoU
+- term: DIoU
+  input: D IoU
+  expected: DIoU
+- term: CIoU
+  input: C IoU
+  expected: CIoU
+- term: mAP
+  input: m A P
+  expected: mAP
+- term: 精确率
+  input: 精确率
+  expected: 精确率
+- term: 召回率
+  input: 召回率
+  expected: 召回率
+- term: FPN
+  input: F P N
+  expected: FPN
+- term: PAN
+  input: P A N
+  expected: PAN
+- term: SPP
+  input: SPP
+  expected: SPP
+- term: SPPF
+  input: S P P F
+  expected: SPPF
+- term: RPN
+  input: R P N
+  expected: RPN
+- term: RoI Pooling
+  input: RoIPool
+  expected: RoI Pooling
+- term: RoI Align
+  input: RoIAlign
+  expected: RoI Align
+- term: 检测头
+  input: 检测头
+  expected: 检测头
+- term: 解耦头
+  input: 结偶头
+  expected: 解耦头
+- term: 分类分支
+  input: 分类分支
+  expected: 分类分支
+- term: 回归分支
+  input: 回归分支
+  expected: 回归分支
+- term: 置信度
+  input: 置信度
+  expected: 置信度
+- term: 交并比
+  input: 焦并比
+  expected: 交并比
+- term: 正负样本
+  input: 正负样本
+  expected: 正负样本
+- term: 标签分配
+  input: 标签分配
+  expected: 标签分配
+- term: 匈牙利匹配
+  input: 匈牙利匹配
+  expected: 匈牙利匹配
+- term: Anchor Free
+  input: Anchor-Free
+  expected: Anchor Free
+- term: One-stage
+  input: One Stage
+  expected: One-stage
+- term: Two-stage
+  input: Two Stage
+  expected: Two-stage
+- term: 滑动窗口
+  input: 滑动窗口
+  expected: 滑动窗口
+- term: 多尺度检测
+  input: 多尺度检测
+  expected: 多尺度检测
+- term: 小目标检测
+  input: 小目标检测
+  expected: 小目标检测
+- term: 实例分割
+  input: 实例分割
+  expected: 实例分割
+- term: 语义分割
+  input: 语义分割
+  expected: 语义分割
+- term: 反向传播
+  input: 反向传播
+  expected: 反向传播
+- term: 梯度下降
+  input: 梯度下降
+  expected: 梯度下降
+- term: 随机梯度下降
+  input: SGD
+  expected: 随机梯度下降
+- term: 梯度消失
+  input: 梯度消失
+  expected: 梯度消失
+- term: 梯度爆炸
+  input: 梯度爆炸
+  expected: 梯度爆炸
+- term: 学习率
+  input: 学习率
+  expected: 学习率
+- term: 学习率衰减
+  input: 学习率衰减
+  expected: 学习率衰减
+- term: Warmup
+  input: 热身学习率
+  expected: Warmup
+- term: BatchNorm
+  input: Batch Norm
+  expected: BatchNorm
+- term: LayerNorm
+  input: Layer Norm
+  expected: LayerNorm
+- term: GroupNorm
+  input: Group Norm
+  expected: GroupNorm
+- term: Dropout
+  input: Dropout
+  expected: Dropout
+- term: 权重衰减
+  input: 权重衰减
+  expected: 权重衰减
+- term: 正则化
+  input: 正则化
+  expected: 正则化
+- term: 过拟合
+  input: 过拟合
+  expected: 过拟合
+- term: 欠拟合
+  input: 欠拟合
+  expected: 欠拟合
+- term: 早停
+  input: Early Stopping
+  expected: 早停
+- term: 数据增强
+  input: 数据增强
+  expected: 数据增强
+- term: Mosaic
+  input: Mosaic
+  expected: Mosaic
+- term: MixUp
+  input: Mix Up
+  expected: MixUp
+- term: CutMix
+  input: Cut Mix
+  expected: CutMix
+- term: Focal Loss
+  input: FocalLoss
+  expected: Focal Loss
+- term: 交叉熵
+  input: Cross Entropy
+  expected: 交叉熵
+- term: 损失函数
+  input: 损失函数
+  expected: 损失函数
+- term: 优化器
+  input: 优化器
+  expected: 优化器
+- term: Adam
+  input: Adam
+  expected: Adam
+- term: AdamW
+  input: AdamW
+  expected: AdamW
+- term: Momentum
+  input: Momentum
+  expected: Momentum
+- term: 余弦退火
+  input: Cosine Annealing
+  expected: 余弦退火
+- term: 梯度裁剪
+  input: 梯度裁剪
+  expected: 梯度裁剪
+- term: 模型量化
+  input: 模型量化
+  expected: 模型量化
+- term: 模型剪枝
+  input: 模型减脂
+  expected: 模型剪枝
+- term: 知识蒸馏
+  input: 知识蒸馏
+  expected: 知识蒸馏
+- term: 混合精度
+  input: Mixed Precision
+  expected: 混合精度
+- term: 推理速度
+  input: 推理速度
+  expected: 推理速度
+- term: YOLOv5
+  input: YOLO v5
+  expected: YOLOv5
+- term: YOLOv8
+  input: YOLO v 8
+  expected: YOLOv8
+- term: YOLOv10
+  input: YOLO v10
+  expected: YOLOv10
+- term: YOLOv11
+  input: YOLO v11
+  expected: YOLOv11
+- term: ResNet
+  input: ResNet
+  expected: ResNet
+- term: DenseNet
+  input: DenseNet
+  expected: DenseNet
+- term: MobileNet
+  input: MobileNet
+  expected: MobileNet
+- term: EfficientNet
+  input: EfficientNet
+  expected: EfficientNet
+- term: ConvNeXt
+  input: ConvNeXt
+  expected: ConvNeXt
+- term: Vision Transformer
+  input: Vision Transformer
+  expected: Vision Transformer
+- term: ViT
+  input: V I T
+  expected: ViT
+- term: Transformer
+  input: tRAGnsformer
+  expected: Transformer
+- term: 自注意力机制
+  input: 自注意力机制
+  expected: 自注意力机制
+- term: 多头注意力
+  input: Multi-Head Attention
+  expected: 多头注意力
+- term: 位置编码
+  input: 位置编码
+  expected: 位置编码
+- term: CBAM
+  input: C B A M
+  expected: CBAM
+- term: SENet
+  input: SE Net
+  expected: SENet
+- term: DETR
+  input: DETR
+  expected: DETR
+- term: Deformable DETR
+  input: Deformable DETR
+  expected: Deformable DETR
+- term: Faster R-CNN
+  input: Faster RCNN
+  expected: Faster R-CNN
+- term: Mask R-CNN
+  input: Mask RCNN
+  expected: Mask R-CNN
+- term: RetinaNet
+  input: RetinaNet
+  expected: RetinaNet
+- term: SSD
+  input: SSD
+  expected: SSD
+- term: FCOS
+  input: FCOS
+  expected: FCOS
+- term: CenterNet
+  input: CenterNet
+  expected: CenterNet
+- term: U-Net
+  input: UNet
+  expected: U-Net
+- term: DeepLab
+  input: DeepLab
+  expected: DeepLab
+- term: SAM
+  input: SAM
+  expected: SAM
+- term: CLIP
+  input: CLIP
+  expected: CLIP
+- term: DINO
+  input: DINO
+  expected: DINO
+- term: Swin Transformer
+  input: SwinTransformer
+  expected: Swin Transformer
+- term: MLP
+  input: MLP
+  expected: MLP
+- term: CNN
+  input: CNN
+  expected: CNN
+- term: 卷积神经网络
+  input: 卷积神经网络
+  expected: 卷积神经网络
+- term: 特征提取
+  input: 特征提取
+  expected: 特征提取
+- term: 点云
+  input: 点云
+  expected: 点云
+- term: 结构光
+  input: 结构光
+  expected: 结构光
+- term: 立体匹配
+  input: 立体匹配
+  expected: 立体匹配
+- term: 视差图
+  input: 视差图
+  expected: 视差图
+- term: 深度图
+  input: 深度图
+  expected: 深度图
+- term: 三维重建
+  input: 三维重建
+  expected: 三维重建
+- term: 投影几何
+  input: 投影几合
+  expected: 投影几何
+- term: 内参矩阵
+  input: 内参矩阵
+  expected: 内参矩阵
+- term: 外参矩阵
+  input: 外参矩阵
+  expected: 外参矩阵
+- term: 相机标定
+  input: 相机标定
+  expected: 相机标定
+- term: 极线几何
+  input: 极线几何
+  expected: 极线几何
+- term: 本质矩阵
+  input: 本质矩阵
+  expected: 本质矩阵
+- term: 基础矩阵
+  input: 基础矩阵
+  expected: 基础矩阵
+- term: 单应矩阵
+  input: 单应矩阵
+  expected: 单应矩阵
+- term: PnP
+  input: PnP
+  expected: PnP
+- term: ICP
+  input: ICP
+  expected: ICP
+- term: SLAM
+  input: SLAM
+  expected: SLAM
+- term: 视觉里程计
+  input: Visual Odometry
+  expected: 视觉里程计
+- term: 位姿估计
+  input: 位姿估计
+  expected: 位姿估计
+- term: 四元数
+  input: 四元数
+  expected: 四元数
+- term: 旋转矩阵
+  input: 旋转矩阵
+  expected: 旋转矩阵
+- term: SDF
+  input: SDF
+  expected: SDF
+- term: TSDF
+  input: TSDF
+  expected: TSDF
+- term: NeRF
+  input: NeRF
+  expected: NeRF
+- term: 3D Gaussian Splatting
+  input: 3DGS
+  expected: 3D Gaussian Splatting
+- term: 体素
+  input: 体素
+  expected: 体素
+- term: 八叉树
+  input: 八叉树
+  expected: 八叉树
+- term: 点云配准
+  input: 点云配准
+  expected: 点云配准
+- term: 点云分割
+  input: 点云分割
+  expected: 点云分割
+- term: 深度估计
+  input: 深度估计
+  expected: 深度估计
+- term: 双目视觉
+  input: 双目视觉
+  expected: 双目视觉
+- term: RGB-D
+  input: RGBD
+  expected: RGB-D
+- term: LiDAR
+  input: 激光雷达
+  expected: LiDAR
+- term: 束调整
+  input: Bundle Adjustment
+  expected: 束调整
+- term: 回环检测
+  input: 回环检测
+  expected: 回环检测
+- term: USB
+  input: U B
+  expected: USB
+- term: WebSocket
+  input: web socket
+  expected: WebSocket
+- term: HTTP
+  input: HTTP
+  expected: HTTP
+- term: REST
+  input: REST
+  expected: REST
+- term: API
+  input: API
+  expected: API
+- term: ONNX
+  input: ONNX
+  expected: ONNX
+- term: TensorRT
+  input: Tensor RT
+  expected: TensorRT
+- term: CUDA
+  input: CUDA
+  expected: CUDA
+- term: OpenCV
+  input: Open CV
+  expected: OpenCV
+- term: PyTorch
+  input: 派托奇
+  expected: PyTorch
+- term: NumPy
+  input: NumPy
+  expected: NumPy
+- term: RAG
+  input: 拉格
+  expected: RAG
+- term: LLM
+  input: 大语言模型
+  expected: LLM
+- term: Kafka
+  input: 卡夫卡
+  expected: Kafka
+- term: 向量数据库
+  input: 向量数据库
+  expected: 向量数据库
+- term: 向量检索
+  input: 向量检索
+  expected: 向量检索
+- term: 余弦相似度
+  input: 余弦相似度
+  expected: 余弦相似度
+- term: TF-IDF
+  input: TF-IDF
+  expected: TF-IDF
+- term: KeyBERT
+  input: KeyBERT
+  expected: KeyBERT
+- term: VAD
+  input: VAD
+  expected: VAD
+- term: ASR
+  input: ASR
+  expected: ASR
+- term: SSE
+  input: SSE
+  expected: SSE
+- term: 流式识别
+  input: 流式识别
+  expected: 流式识别
+- term: 热词
+  input: 热词
+  expected: 热词
+- term: 仅本地模式
+  input: 仅本地模式
+  expected: 仅本地模式

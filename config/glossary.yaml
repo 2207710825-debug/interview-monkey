@@ -1,0 +1,575 @@
+- term: 先验框
+  weight: 8
+  aliases: [锚定框, 先验狂, 先验筐, 鲜验矿, 鲜艳框, 鲜艳矿]
+  category: 目标检测
+- term: 锚框
+  weight: 8
+  aliases: [毛矿, 毛框]
+  category: 目标检测
+- term: Anchor Box
+  weight: 7
+  aliases: [anchorbox, anchor boxes]
+  category: 目标检测
+- term: 边界框
+  weight: 6
+  category: 目标检测
+- term: 候选框
+  weight: 6
+  category: 目标检测
+- term: 目标检测
+  weight: 6
+  category: 目标检测
+- term: NMS
+  weight: 7
+  aliases: [N M S]
+  category: 目标检测
+- term: 非极大值抑制
+  weight: 6
+  category: 目标检测
+- term: Soft-NMS
+  weight: 6
+  aliases: [Soft NMS]
+  category: 目标检测
+- term: IoU
+  weight: 7
+  aliases: [I O U, 欧U]
+  category: 目标检测
+- term: GIoU
+  weight: 6
+  aliases: [G IoU]
+  category: 目标检测
+- term: DIoU
+  weight: 6
+  aliases: [D IoU]
+  category: 目标检测
+- term: CIoU
+  weight: 7
+  aliases: [C IoU, 西欧U]
+  category: 目标检测
+- term: mAP
+  weight: 7
+  aliases: [m A P]
+  category: 目标检测
+- term: 精确率
+  weight: 5
+  category: 目标检测
+- term: 召回率
+  weight: 5
+  category: 目标检测
+- term: FPN
+  weight: 7
+  aliases: [F P N]
+  category: 目标检测
+- term: PAN
+  weight: 7
+  aliases: [P A N]
+  category: 目标检测
+- term: SPP
+  weight: 6
+  category: 目标检测
+- term: SPPF
+  weight: 7
+  aliases: [S P P F]
+  category: 目标检测
+- term: RPN
+  weight: 7
+  aliases: [R P N]
+  category: 目标检测
+- term: RoI Pooling
+  weight: 6
+  aliases: [ROI Pooling, RoIPool]
+  category: 目标检测
+- term: RoI Align
+  weight: 7
+  aliases: [ROI Align, RoIAlign, ROIline]
+  category: 目标检测
+- term: 检测头
+  weight: 6
+  category: 目标检测
+- term: 解耦头
+  weight: 7
+  aliases: [结偶头]
+  category: 目标检测
+- term: 分类分支
+  weight: 5
+  category: 目标检测
+- term: 回归分支
+  weight: 5
+  category: 目标检测
+- term: 置信度
+  weight: 5
+  category: 目标检测
+- term: 交并比
+  weight: 6
+  aliases: [焦并比]
+  category: 目标检测
+- term: 正负样本
+  weight: 5
+  category: 目标检测
+- term: 标签分配
+  weight: 6
+  category: 目标检测
+- term: 匈牙利匹配
+  weight: 6
+  category: 目标检测
+- term: Anchor Free
+  weight: 6
+  aliases: [Anchor-Free]
+  category: 目标检测
+- term: One-stage
+  weight: 5
+  aliases: [One Stage]
+  category: 目标检测
+- term: Two-stage
+  weight: 5
+  aliases: [Two Stage]
+  category: 目标检测
+- term: 滑动窗口
+  weight: 5
+  category: 目标检测
+- term: 多尺度检测
+  weight: 6
+  category: 目标检测
+- term: 小目标检测
+  weight: 6
+  category: 目标检测
+- term: 实例分割
+  weight: 6
+  category: 目标检测
+- term: 语义分割
+  weight: 6
+  category: 目标检测
+
+- term: 反向传播
+  weight: 6
+  category: 训练优化
+- term: 梯度下降
+  weight: 5
+  category: 训练优化
+- term: 随机梯度下降
+  weight: 5
+  aliases: [SGD]
+  category: 训练优化
+- term: 梯度消失
+  weight: 6
+  category: 训练优化
+- term: 梯度爆炸
+  weight: 6
+  category: 训练优化
+- term: 学习率
+  weight: 5
+  category: 训练优化
+- term: 学习率衰减
+  weight: 6
+  category: 训练优化
+- term: Warmup
+  weight: 6
+  aliases: [热身学习率]
+  category: 训练优化
+- term: BatchNorm
+  weight: 7
+  aliases: [Batch Norm, ba norm]
+  category: 训练优化
+- term: LayerNorm
+  weight: 6
+  aliases: [Layer Norm]
+  category: 训练优化
+- term: GroupNorm
+  weight: 6
+  aliases: [Group Norm]
+  category: 训练优化
+- term: Dropout
+  weight: 6
+  category: 训练优化
+- term: 权重衰减
+  weight: 5
+  category: 训练优化
+- term: 正则化
+  weight: 5
+  category: 训练优化
+- term: 过拟合
+  weight: 5
+  category: 训练优化
+- term: 欠拟合
+  weight: 5
+  category: 训练优化
+- term: 早停
+  weight: 5
+  aliases: [Early Stopping]
+  category: 训练优化
+- term: 数据增强
+  weight: 6
+  category: 训练优化
+- term: Mosaic
+  weight: 6
+  category: 训练优化
+- term: MixUp
+  weight: 6
+  aliases: [Mix Up]
+  category: 训练优化
+- term: CutMix
+  weight: 6
+  aliases: [Cut Mix]
+  category: 训练优化
+- term: Focal Loss
+  weight: 7
+  aliases: [FocalLoss]
+  category: 训练优化
+- term: 交叉熵
+  weight: 5
+  aliases: [Cross Entropy]
+  category: 训练优化
+- term: 损失函数
+  weight: 5
+  category: 训练优化
+- term: 优化器
+  weight: 5
+  category: 训练优化
+- term: Adam
+  weight: 5
+  category: 训练优化
+- term: AdamW
+  weight: 6
+  category: 训练优化
+- term: Momentum
+  weight: 5
+  category: 训练优化
+- term: 余弦退火
+  weight: 6
+  aliases: [Cosine Annealing]
+  category: 训练优化
+- term: 梯度裁剪
+  weight: 5
+  category: 训练优化
+- term: 模型量化
+  weight: 6
+  category: 训练优化
+- term: 模型剪枝
+  weight: 7
+  aliases: [模型减脂]
+  category: 训练优化
+- term: 知识蒸馏
+  weight: 6
+  category: 训练优化
+- term: 混合精度
+  weight: 6
+  aliases: [Mixed Precision]
+  category: 训练优化
+- term: 推理速度
+  weight: 5
+  category: 训练优化
+
+- term: YOLOv5
+  weight: 7
+  aliases: [YOLO v5, YOLO V5]
+  category: 深度学习模型
+- term: YOLOv8
+  weight: 8
+  aliases: [YOLO v 8, YOLO V8, YOLOV巴, YOLOB8, UloV8]
+  category: 深度学习模型
+- term: YOLOv10
+  weight: 6
+  aliases: [YOLO v10]
+  category: 深度学习模型
+- term: YOLOv11
+  weight: 6
+  aliases: [YOLO v11]
+  category: 深度学习模型
+- term: ResNet
+  weight: 6
+  category: 深度学习模型
+- term: DenseNet
+  weight: 6
+  category: 深度学习模型
+- term: MobileNet
+  weight: 6
+  category: 深度学习模型
+- term: EfficientNet
+  weight: 6
+  category: 深度学习模型
+- term: ConvNeXt
+  weight: 6
+  category: 深度学习模型
+- term: Vision Transformer
+  weight: 6
+  category: 深度学习模型
+- term: ViT
+  weight: 7
+  aliases: [V I T, VID]
+  category: 深度学习模型
+- term: Transformer
+  weight: 7
+  aliases: [tRAGnsformer]
+  category: 深度学习模型
+- term: 自注意力机制
+  weight: 6
+  category: 深度学习模型
+- term: 多头注意力
+  weight: 6
+  aliases: [Multi-Head Attention]
+  category: 深度学习模型
+- term: 位置编码
+  weight: 6
+  category: 深度学习模型
+- term: CBAM
+  weight: 7
+  aliases: [C B A M]
+  category: 深度学习模型
+- term: SENet
+  weight: 6
+  aliases: [SE Net]
+  category: 深度学习模型
+- term: DETR
+  weight: 6
+  category: 深度学习模型
+- term: Deformable DETR
+  weight: 6
+  category: 深度学习模型
+- term: Faster R-CNN
+  weight: 6
+  aliases: [Faster RCNN]
+  category: 深度学习模型
+- term: Mask R-CNN
+  weight: 6
+  aliases: [Mask RCNN]
+  category: 深度学习模型
+- term: RetinaNet
+  weight: 6
+  category: 深度学习模型
+- term: SSD
+  weight: 6
+  category: 深度学习模型
+- term: FCOS
+  weight: 6
+  category: 深度学习模型
+- term: CenterNet
+  weight: 6
+  category: 深度学习模型
+- term: U-Net
+  weight: 6
+  aliases: [UNet]
+  category: 深度学习模型
+- term: DeepLab
+  weight: 6
+  category: 深度学习模型
+- term: SAM
+  weight: 6
+  category: 深度学习模型
+- term: CLIP
+  weight: 6
+  category: 深度学习模型
+- term: DINO
+  weight: 6
+  category: 深度学习模型
+- term: Swin Transformer
+  weight: 6
+  aliases: [SwinTransformer]
+  category: 深度学习模型
+- term: MLP
+  weight: 5
+  category: 深度学习模型
+- term: CNN
+  weight: 5
+  category: 深度学习模型
+- term: 卷积神经网络
+  weight: 6
+  category: 深度学习模型
+- term: 特征提取
+  weight: 5
+  category: 深度学习模型
+
+- term: 点云
+  weight: 6
+  category: 3D视觉
+- term: 结构光
+  weight: 6
+  category: 3D视觉
+- term: 立体匹配
+  weight: 6
+  category: 3D视觉
+- term: 视差图
+  weight: 6
+  category: 3D视觉
+- term: 深度图
+  weight: 5
+  category: 3D视觉
+- term: 三维重建
+  weight: 6
+  category: 3D视觉
+- term: 投影几何
+  weight: 7
+  aliases: [投影几合]
+  category: 3D视觉
+- term: 内参矩阵
+  weight: 6
+  category: 3D视觉
+- term: 外参矩阵
+  weight: 6
+  category: 3D视觉
+- term: 相机标定
+  weight: 6
+  category: 3D视觉
+- term: 极线几何
+  weight: 6
+  category: 3D视觉
+- term: 本质矩阵
+  weight: 6
+  category: 3D视觉
+- term: 基础矩阵
+  weight: 6
+  category: 3D视觉
+- term: 单应矩阵
+  weight: 6
+  category: 3D视觉
+- term: PnP
+  weight: 6
+  category: 3D视觉
+- term: ICP
+  weight: 6
+  category: 3D视觉
+- term: SLAM
+  weight: 7
+  category: 3D视觉
+- term: 视觉里程计
+  weight: 6
+  aliases: [Visual Odometry]
+  category: 3D视觉
+- term: 位姿估计
+  weight: 6
+  category: 3D视觉
+- term: 四元数
+  weight: 6
+  category: 3D视觉
+- term: 旋转矩阵
+  weight: 6
+  category: 3D视觉
+- term: SDF
+  weight: 7
+  category: 3D视觉
+- term: TSDF
+  weight: 6
+  category: 3D视觉
+- term: NeRF
+  weight: 7
+  category: 3D视觉
+- term: 3D Gaussian Splatting
+  weight: 7
+  aliases: [3DGS, 3D高cienssptdding]
+  category: 3D视觉
+- term: 体素
+  weight: 5
+  category: 3D视觉
+- term: 八叉树
+  weight: 5
+  category: 3D视觉
+- term: 点云配准
+  weight: 6
+  category: 3D视觉
+- term: 点云分割
+  weight: 6
+  category: 3D视觉
+- term: 深度估计
+  weight: 6
+  category: 3D视觉
+- term: 双目视觉
+  weight: 6
+  category: 3D视觉
+- term: RGB-D
+  weight: 6
+  aliases: [RGBD]
+  category: 3D视觉
+- term: LiDAR
+  weight: 6
+  aliases: [激光雷达]
+  category: 3D视觉
+- term: 束调整
+  weight: 6
+  aliases: [Bundle Adjustment]
+  category: 3D视觉
+- term: 回环检测
+  weight: 6
+  category: 3D视觉
+
+- term: USB
+  weight: 7
+  aliases: [U B, U S B, 优艾斯比, U B 八]
+  category: 工程术语
+- term: WebSocket
+  weight: 7
+  aliases: [web socket, Web Socket]
+  category: 工程术语
+- term: HTTP
+  weight: 5
+  category: 工程术语
+- term: REST
+  weight: 5
+  category: 工程术语
+- term: API
+  weight: 5
+  category: 工程术语
+- term: ONNX
+  weight: 6
+  category: 工程术语
+- term: TensorRT
+  weight: 6
+  aliases: [Tensor RT]
+  category: 工程术语
+- term: CUDA
+  weight: 6
+  category: 工程术语
+- term: OpenCV
+  weight: 6
+  aliases: [Open CV]
+  category: 工程术语
+- term: PyTorch
+  weight: 6
+  aliases: [派托奇]
+  category: 工程术语
+- term: NumPy
+  weight: 5
+  category: 工程术语
+- term: RAG
+  weight: 8
+  aliases: [拉格]
+  category: 工程术语
+- term: LLM
+  weight: 7
+  aliases: [大语言模型]
+  category: 工程术语
+- term: Kafka
+  weight: 8
+  aliases: [卡夫卡, 快福卡]
+  category: 工程术语
+- term: 向量数据库
+  weight: 6
+  category: 工程术语
+- term: 向量检索
+  weight: 6
+  category: 工程术语
+- term: 余弦相似度
+  weight: 6
+  category: 工程术语
+- term: TF-IDF
+  weight: 6
+  category: 工程术语
+- term: KeyBERT
+  weight: 6
+  category: 工程术语
+- term: VAD
+  weight: 6
+  category: 语音识别
+- term: ASR
+  weight: 6
+  category: 语音识别
+- term: SSE
+  weight: 6
+  category: 工程术语
+- term: 流式识别
+  weight: 6
+  category: 语音识别
+- term: 热词
+  weight: 5
+  category: 语音识别
+- term: 仅本地模式
+  weight: 5
+  category: 工程术语

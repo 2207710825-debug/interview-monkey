@@ -1,0 +1,202 @@
+cases:
+  - id: asr001
+    category: term_dense
+    source: tts
+    reference: 先验框机制是什么啊？
+    expected_question: 先验框机制是什么啊？
+    terms: [先验框]
+  - id: asr002
+    category: abbreviation
+    source: tts
+    reference: USB 的无线传输协议有哪些？
+    expected_question: USB 的无线传输协议有哪些？
+    terms: [USB]
+  - id: asr003
+    category: abbreviation
+    source: tts
+    reference: NMS 在目标检测里起什么作用？
+    expected_question: NMS 在目标检测里起什么作用？
+    terms: [NMS]
+  - id: asr004
+    category: mixed_language
+    source: tts
+    reference: IoU 和 mAP 分别怎么计算？
+    expected_question: IoU 和 mAP 分别怎么计算？
+    terms: [IoU, mAP]
+  - id: asr005
+    category: mixed_language
+    source: tts
+    reference: YOLOv8 里的 SPPF 模块有什么作用？
+    expected_question: YOLOv8 里的 SPPF 模块有什么作用？
+    terms: [YOLOv8, SPPF]
+  - id: asr006
+    category: mixed_language
+    source: tts
+    reference: Anchor Box 和先验框是同一个概念吗？
+    expected_question: Anchor Box 和先验框是同一个概念吗？
+    terms: [Anchor Box, 先验框]
+  - id: asr007
+    category: abbreviation
+    source: tts
+    reference: FPN 和 PAN 的特征融合方式有什么区别？
+    expected_question: FPN 和 PAN 的特征融合方式有什么区别？
+    terms: [FPN, PAN]
+  - id: asr008
+    category: mixed_language
+    source: tts
+    reference: CIoU Loss 和 Focal Loss 分别解决什么问题？
+    expected_question: CIoU Loss 和 Focal Loss 分别解决什么问题？
+    terms: [CIoU, Focal Loss]
+  - id: asr009
+    category: abbreviation
+    source: tts
+    reference: RPN 生成的候选框为什么还要经过 RoI Align？
+    expected_question: RPN 生成的候选框为什么还要经过 RoI Align？
+    terms: [RPN, RoI Align]
+  - id: asr010
+    category: term_dense
+    source: tts
+    reference: Transformer 的自注意力机制复杂度是多少？
+    expected_question: Transformer 的自注意力机制复杂度是多少？
+    terms: [Transformer, 自注意力机制]
+  - id: asr011
+    category: mixed_language
+    source: tts
+    reference: BatchNorm 和 Dropout 在推理阶段有什么不同？
+    expected_question: BatchNorm 和 Dropout 在推理阶段有什么不同？
+    terms: [BatchNorm, Dropout]
+  - id: asr012
+    category: term_dense
+    source: tts
+    reference: Mosaic 数据增强为什么适合目标检测？
+    expected_question: Mosaic 数据增强为什么适合目标检测？
+    terms: [Mosaic, 数据增强]
+  - id: asr013
+    category: mixed_language
+    source: tts
+    reference: ResNet 和 ViT 的特征提取方式有什么区别？
+    expected_question: ResNet 和 ViT 的特征提取方式有什么区别？
+    terms: [ResNet, ViT]
+  - id: asr014
+    category: abbreviation
+    source: tts
+    reference: CBAM 的通道注意力和空间注意力怎么计算？
+    expected_question: CBAM 的通道注意力和空间注意力怎么计算？
+    terms: [CBAM, 通道注意力, 空间注意力]
+  - id: asr015
+    category: term_dense
+    source: tts
+    reference: 点云和结构光在三维重建中各有什么优缺点？
+    expected_question: 点云和结构光在三维重建中各有什么优缺点？
+    terms: [点云, 结构光, 三维重建]
+  - id: asr016
+    category: term_dense
+    source: tts
+    reference: 立体匹配生成视差图以后怎样计算深度？
+    expected_question: 立体匹配生成视差图以后怎样计算深度？
+    terms: [立体匹配, 视差图]
+  - id: asr017
+    category: mixed_language
+    source: tts
+    reference: NeRF 和 3D Gaussian Splatting 有什么区别？
+    expected_question: NeRF 和 3D Gaussian Splatting 有什么区别？
+    terms: [NeRF, 3D Gaussian Splatting]
+  - id: asr018
+    category: abbreviation
+    source: tts
+    reference: SDF 在三维场景表示中是什么意思？
+    expected_question: SDF 在三维场景表示中是什么意思？
+    terms: [SDF]
+  - id: asr019
+    category: term_dense
+    source: tts
+    reference: 投影几何里的内参矩阵和外参矩阵分别表示什么？
+    expected_question: 投影几何里的内参矩阵和外参矩阵分别表示什么？
+    terms: [投影几何, 内参矩阵, 外参矩阵]
+  - id: asr020
+    category: term_dense
+    source: tts
+    reference: 非极大值抑制为什么会漏掉重叠目标？
+    expected_question: 非极大值抑制为什么会漏掉重叠目标？
+    terms: [非极大值抑制]
+  - id: asr021
+    category: term_dense
+    source: tts
+    reference: 反向传播时梯度消失是怎么产生的？
+    expected_question: 反向传播时梯度消失是怎么产生的？
+    terms: [反向传播, 梯度消失]
+  - id: asr022
+    category: term_dense
+    source: tts
+    reference: 学习率衰减为什么能让训练后期更稳定？
+    expected_question: 学习率衰减为什么能让训练后期更稳定？
+    terms: [学习率衰减]
+  - id: asr023
+    category: term_dense
+    source: tts
+    reference: 模型量化和模型剪枝分别怎样提升推理速度？
+    expected_question: 模型量化和模型剪枝分别怎样提升推理速度？
+    terms: [模型量化, 模型剪枝, 推理速度]
+  - id: asr024
+    category: term_dense
+    source: tts
+    reference: 端到端自动驾驶方案有哪些主要风险？
+    expected_question: 端到端自动驾驶方案有哪些主要风险？
+    terms: [端到端, 自动驾驶]
+  - id: asr025
+    category: colloquial
+    source: tts
+    reference: 呃，那个，先验框到底是怎么生成的啊？
+    expected_question: 先验框到底是怎么生成的？
+    terms: [先验框]
+  - id: asr026
+    category: colloquial
+    source: tts
+    reference: 但是但是，我还是不明白注意力机制为什么有效？
+    expected_question: 但是，我还是不明白注意力机制为什么有效？
+    terms: [注意力机制]
+  - id: asr027
+    category: colloquial
+    source: tts
+    reference: 嗯，我想问一下，USB 三点零和 USB 二点零有什么区别？
+    expected_question: USB 3.0 和 USB 2.0 有什么区别？
+    terms: [USB]
+  - id: asr028
+    category: abbreviation
+    source: tts
+    reference: YOLO v 8 的解耦头有什么优势？
+    expected_question: YOLOv8 的解耦头有什么优势？
+    terms: [YOLOv8, 解耦头]
+  - id: asr029
+    category: abbreviation
+    source: tts
+    reference: U S B 接口为什么需要枚举设备？
+    expected_question: USB 接口为什么需要枚举设备？
+    terms: [USB]
+  - id: asr030
+    category: colloquial
+    source: tts
+    reference: 那个声音关掉以后，你还能听得到吗？
+    expected_question: 声音关掉以后，你还能听得到吗？
+    terms: []
+  - id: asr031
+    category: background_noise
+    source: tts_noise
+    noise_snr_db: 18
+    reference: 请解释一下先验框和锚框的区别。
+    expected_question: 请解释一下先验框和锚框的区别。
+    terms: [先验框, 锚框]
+  - id: asr032
+    category: background_noise
+    source: tts_noise
+    noise_snr_db: 15
+    reference: YOLOv8 使用的 NMS 可以怎样优化？
+    expected_question: YOLOv8 使用的 NMS 可以怎样优化？
+    terms: [YOLOv8, NMS]
+  - id: asr033
+    category: background_noise
+    source: tts_noise
+    noise_snr_db: 12
+    reference: USB 和 WebSocket 的缩写分别代表什么？
+    expected_question: USB 和 WebSocket 的缩写分别代表什么？
+    terms: [USB, WebSocket]

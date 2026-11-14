@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>面试猴 · 阶段 P4 验收（fake_feed）</title>
+<style>
+  :root{--bg:#f3efe8;--card:#fff;--ink:#2b2620;--sub:#8a8272;--brand:#f59e0b;--line:#ece5d8;--green:#059669;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;font-family:"Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);}
+  .bar{height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--card);border-bottom:1px solid var(--line);}
+  .bar b{font-size:14px;white-space:nowrap;}
+  .bar button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer;}
+  .bar button:hover{border-color:var(--brand);}
+  .bar button.primary{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;}
+  #report{font-size:12.5px;color:var(--ink);margin-left:auto;white-space:nowrap;
+          background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:5px 10px;}
+  #report b{font-size:14px;color:var(--brand);}
+  #report .ok{color:var(--green);font-weight:700;}
+  #report .bad{color:#dc2626;font-weight:700;}
+  #frame{width:100%;height:calc(100vh - 52px);border:0;display:block;}
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>P4 验收脚本</b>
+  <button class="primary" id="btnDemo">① 注入 3 题 + 8 句转写（慢速）</button>
+  <button id="btnPin">② 开启固定 + 再来一题</button>
+  <button id="btnReset">重置</button>
+  <span id="report">等待注入…</span>
+</div>
+<iframe id="frame" src="../renderer/index.html"></iframe>
+
+<script>
+/* 验收用假数据：不连后端，直接调 index.html 暴露的前端入口。
+ * 等价于在 DevTools 控制台执行：
+ *   onAnswerDelta(101, "字"); aiTransAppend("句子", true); aiSetPin(true) ...
+ * 用 http:// 同源打开，iframe 才能访问 contentWindow。
+ * ?auto=demo / ?auto=pin 走同步注入，供无头截图得到确定状态。 */
+const frame = document.getElementById("frame");
+const $report = document.getElementById("report");
+const W = () => frame.contentWindow;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let running = false;
+
+const TRANSCRIPT = [
+  "面试官你好，我先介绍一下这个项目背景。",
+  "我们主要做目标检测，指标用的是 mAP 和 IoU。",
+  "后来发现普通 IoU 对框的对齐不敏感，就换成了 CIoU。",
+  "NMS 部分我们试过 Soft-NMS，召回大概涨了两个点。",
+  "请问 CIoU 和普通 IoU 的区别是什么？",
+  "另外能不能讲一下自注意力的计算原理？",
+  "还有一个系统设计题，短链服务怎么设计？",
+  "好的，那我们先看第一题。"
+];
+const QUESTIONS = [
+  {q:"什么是 IoU 和 CIoU，两者区别在哪？",
+   a:"CIoU\n在 IoU 基础上补了中心点距离和长宽比两项惩罚，收敛更快、框更准。\n· IoU 只看重叠面积\n· CIoU 还看距离与形状"},
+  {q:"为什么目标检测里要用 NMS，它有什么缺点？",
+   a:"去重\nNMS 用来删掉同一目标上重叠的候选框，只留分数最高的。\n缺点是密集场景容易误删、阈值难调。"},
+  {q:"讲讲 Transformer 里自注意力的计算原理",
+   a:"缩放点积注意力\nQ·Kᵀ 除以 √d 后 softmax，再乘 V 得到加权表示。\n每个位置都能直接看到全序列，复杂度是 O(n²)。"}
+];
+const EXTRA = {
+  q:"固定开启后，这一题会不会替换中栏？",
+  a:"（第 4 题答案：应当只出现在左栏列表里，中栏保持不动）"
+};
+
+function stat(html){ $report.innerHTML = html; }
+
+function reset(){
+  if(!W() || !W().QA) return;
+  const w = W();
+  /* 只碰 window 上暴露的状态；转写计数一律从 DOM 读，避免依赖 iframe 的词法变量 */
+  w.QA.items.length = 0;
+  w.QA.selected = -1; w.QA.pendingQuestion = null;
+  w.QA.zeroKey = null; w.QA.rebindTarget = null;
+  w.document.getElementById("aiTranscript").innerHTML = "";
+  w.aiSetPin(false);
+  w.aiRenderList(); w.aiRenderMid();
+}
+function counts(){
+  const w = W(), d = w.document;
+  return {
+    q: w.QA.items.length,
+    tr: d.querySelectorAll("#aiTranscript .tr-line.final").length,
+    pinned: w.QA.pinned,
+    mid: d.getElementById("aiAnswer").innerHTML
+  };
+}
+
+/* 同步逐字注入：每字都走一次 onAnswerDelta，最后一题停在「生成中」 */
+function feedFast(id, q, keepStreaming){
+  const w = W();
+  w.onQuestion(id, q.q, "normal");
+  for(const ch of q.a) w.onAnswerDelta(id, ch);
+  if(!keepStreaming) w.onAnswerDone(id, {status:"done"});
+}
+function demoFast(){
+  reset(); W().switchMod("ai");
+  TRANSCRIPT.forEach(t => W().aiTransAppend(t, true));   /* 8 句，只追加 */
+  QUESTIONS.forEach((q,i) => feedFast(101+i, q, i === QUESTIONS.length-1));
+  W().aiRenderMid();                 /* 无头环境不保证 rAF 触发，强制刷一次 */
+  const c = counts();
+  stat("左栏 <b>"+c.q+"</b> 条 · 右栏转写 <b>"+c.tr+"</b> 句 · 中栏流式 <span class='ok'>✓</span> · 第 3 题生成中");
+}
+function pinFast(){
+  const w = W();
+  w.aiSetPin(true);
+  w.aiRenderMid();                   /* 先把中栏刷到确定状态，再做前后对比 */
+  const before = counts().mid;
+  feedFast(201, EXTRA, false);
+  const c = counts();
+  const unchanged = (c.mid === before);
+  stat("固定已开 · 左栏 <b>"+c.q+"</b> 条 · 转写仍 <b>"+c.tr+"</b> 句 · 中栏"
+       + (unchanged ? "<span class='ok'>未变化 ✓</span>" : "<span class='bad'>被替换 ✗</span>"));
+}
+
+/* 慢速版本：手动点按钮时能看到打字机效果 */
+async function feedSlow(id, q, keepStreaming){
+  const w = W();
+  w.onQuestion(id, q.q, "normal");
+  for(const ch of q.a){ w.onAnswerDelta(id, ch); await sleep(7); }
+  if(!keepStreaming) w.onAnswerDone(id, {status:"done"});
+}
+async function demo(){
+  if(running) return; running = true;
+  reset(); W().switchMod("ai");
+  TRANSCRIPT.forEach(t => W().aiTransAppend(t, true));
+  for(let i=0; i<QUESTIONS.length; i++)
+    await feedSlow(101+i, QUESTIONS[i], i === QUESTIONS.length-1);
+  const c = counts();
+  stat("左栏 <b>"+c.q+"</b> 条 · 右栏转写 <b>"+c.tr+"</b> 句 · 中栏流式 <span class='ok'>✓</span> · 第 3 题生成中");
+  running = false;
+}
+async function pinDemo(){
+  if(running) return; running = true;
+  if(W().QA.items.length < 3){ running = false; await demo(); return pinDemo(); }
+  const w = W();
+  w.aiSetPin(true);
+  w.aiRenderMid();                   /* 先把中栏刷到确定状态，再做前后对比 */
+  const before = counts().mid;
+  await feedSlow(201, EXTRA, false);
+  const c = counts();
+  const unchanged = (c.mid === before);
+  stat("固定已开 · 左栏 <b>"+c.q+"</b> 条 · 转写仍 <b>"+c.tr+"</b> 句 · 中栏"
+       + (unchanged ? "<span class='ok'>未变化 ✓</span>" : "<span class='bad'>被替换 ✗</span>"));
+  running = false;
+}
+
+/* 不依赖 iframe 的 onload 次数：轮询等 QA 状态机就绪后只注入一次。
+ * headless/虚拟时间下 onload 可能触发多次，其中一次 iframe 还是空白文档。 */
+const AUTO = new URLSearchParams(location.search).get("auto");
+let bootTries = 0, booted = false;
+function boot(){
+  if(booted) return;
+  const w = W();
+  if(!w || !w.QA || !w.switchMod){
+    if(++bootTries < 300) setTimeout(boot, 20);
+    else stat("iframe 未就绪");
+    return;
+  }
+  booted = true;
+  try{
+    w.switchMod("ai");
+    if(AUTO === "demo") demoFast();
+    else if(AUTO === "pin"){ demoFast(); pinFast(); }
+    else stat("已切到智能问答模块 · 等待注入…");
+  }catch(e){ stat("注入失败：" + e.message); }
+}
+boot();
+
+document.getElementById("btnDemo").onclick = demo;
+document.getElementById("btnPin").onclick = pinDemo;
+document.getElementById("btnReset").onclick = () => { reset(); stat("已重置"); };
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{"id":"q01","question":"什么是RAG？","required_terms":["检索","生成","知识库"],"source":"RAG通过知识库检索相关片段，再将片段交给模型生成有依据的回答。"}
+{"id":"q02","question":"Kafka如何保证消息可靠？","required_terms":["副本","ACK","持久化"],"source":"Kafka通过磁盘持久化、副本机制和生产者ACK策略提高消息可靠性。"}
+{"id":"q03","question":"MVCC的原理是什么？","required_terms":["版本","快照","并发"],"source":"MVCC保存数据版本，事务按快照读取，从而降低读写冲突。"}
+{"id":"q04","question":"LSM-Tree为什么适合写密集场景？","required_terms":["顺序写","内存表","Compaction"],"source":"LSM-Tree先写内存表和顺序日志，再通过Compaction合并磁盘文件。"}
+{"id":"q05","question":"一致性哈希解决什么问题？","required_terms":["哈希环","节点","迁移"],"source":"一致性哈希把节点和键映射到哈希环，节点变化时只迁移局部数据。"}
+{"id":"q06","question":"背压机制有什么作用？","required_terms":["消费者","队列","限流"],"source":"背压在消费者跟不上时限制生产速度或丢弃策略，防止队列无限增长。"}
+{"id":"q07","question":"SSE和WebSocket有什么区别？","required_terms":["单向","双向","HTTP"],"source":"SSE基于HTTP提供服务端到客户端单向流；WebSocket提供全双工双向通信。"}
+{"id":"q08","question":"WebSocket断线后如何安全重连？","required_terms":["指数退避","心跳","重放"],"source":"安全重连需要心跳、指数退避、序号恢复和幂等重放。"}
+{"id":"q09","question":"VAD为什么需要pre-roll？","required_terms":["语音起点","缓冲","吞字"],"source":"pre-roll保留语音起点前的短缓冲，避免VAD判定滞后造成开头吞字。"}
+{"id":"q10","question":"什么是推测检索？","required_terms":["partial","预取","final"],"source":"推测检索在ASR partial稳定时预取，final变化不大就复用结果。"}
+{"id":"q11","question":"RRF如何融合检索结果？","required_terms":["排名","倒数","融合"],"source":"RRF按各检索列表中的排名倒数累加，不要求不同分数同尺度。"}
+{"id":"q12","question":"BM25的核心因素有哪些？","required_terms":["词频","逆文档频率","文档长度"],"source":"BM25综合词频、逆文档频率和文档长度归一化计算相关性。"}
+{"id":"q13","question":"向量检索的基本原理是什么？","required_terms":["嵌入","相似度","近邻"],"source":"向量检索将文本编码为嵌入，通过相似度搜索近邻向量。"}
+{"id":"q14","question":"WASAPI Loopback采集的是什么？","required_terms":["系统输出","环回","PCM"],"source":"WASAPI Loopback从系统输出端点采集混音后的PCM，不等同于麦克风输入。"}
+{"id":"q15","question":"WDA_EXCLUDEFROMCAPTURE有什么作用？","required_terms":["窗口","捕获","DWM"],"source":"WDA_EXCLUDEFROMCAPTURE要求DWM在受支持的公共捕获路径中排除目标窗口。"}
+{"id":"q16","question":"异步队列如何实现模块解耦？","required_terms":["生产者","消费者","背压"],"source":"异步队列隔离生产者和消费者的执行节奏，并通过有界容量施加背压。"}
+{"id":"q17","question":"TTFT表示什么？","required_terms":["请求","首个token","延迟"],"source":"TTFT是从请求就绪到收到首个token的延迟。"}
+{"id":"q18","question":"限流错误应该如何重试？","required_terms":["429","退避","抖动"],"source":"遇到HTTP 429应尊重Retry-After并使用带抖动的指数退避。"}
+{"id":"q19","question":"RAG如何抑制幻觉？","required_terms":["引用","阈值","资料不足"],"source":"RAG应设置检索阈值、强制引用，并在资料不足时明确降级说明。"}
+{"id":"q20","question":"说话人分离在实时问答中有什么用？","required_terms":["speaker","提问方","过滤"],"source":"说话人分离为转写标注speaker，使系统只对指定提问方触发回答。"}

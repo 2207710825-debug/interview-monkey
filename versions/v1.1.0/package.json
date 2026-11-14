@@ -1,0 +1,16 @@
+{
+  "name": "interviewmonkey",
+  "productName": "面试猴",
+  "version": "1.0.0",
+  "description": "面试猴 · 会议实时总结与疑问解答助手（全语音·零门槛）",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "面试猴",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "electron": "^33.2.0"
+  }
+}

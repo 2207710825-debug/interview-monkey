@@ -1,0 +1,743 @@
+{
+  "dataset": "E:\\面试猴\\面试猴-app\\eval\\eval_set.jsonl",
+  "knowledge_root": "E:\\面试猴\\面试猴-app\\engine\\knowledge",
+  "knowledge_files": [
+    "使用与常见问题.md",
+    "面试猴产品说明.md"
+  ],
+  "summary": {
+    "single_query_baseline": {
+      "questions": 20,
+      "questions_with_results": 20,
+      "required_term_hits": 3,
+      "required_term_total": 60,
+      "required_term_recall": 0.05,
+      "product_filter_applied": 0,
+      "product_chunks_returned": 40
+    },
+    "phase7_dual_query_fusion_and_filter": {
+      "questions": 20,
+      "questions_with_results": 0,
+      "required_term_hits": 0,
+      "required_term_total": 60,
+      "required_term_recall": 0.0,
+      "product_filter_applied": 20,
+      "product_chunks_returned": 0
+    }
+  },
+  "baseline": [
+    {
+      "id": "q01",
+      "required_terms_found": [
+        "检索",
+        "生成",
+        "知识库"
+      ],
+      "required_terms": [
+        "检索",
+        "生成",
+        "知识库"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.548404
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.535365
+        }
+      ]
+    },
+    {
+      "id": "q02",
+      "required_terms_found": [],
+      "required_terms": [
+        "副本",
+        "ACK",
+        "持久化"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.645787
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.522163
+        }
+      ]
+    },
+    {
+      "id": "q03",
+      "required_terms_found": [],
+      "required_terms": [
+        "版本",
+        "快照",
+        "并发"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.546371
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.548546
+        }
+      ]
+    },
+    {
+      "id": "q04",
+      "required_terms_found": [],
+      "required_terms": [
+        "顺序写",
+        "内存表",
+        "Compaction"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.446371
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.459088
+        }
+      ]
+    },
+    {
+      "id": "q05",
+      "required_terms_found": [],
+      "required_terms": [
+        "哈希环",
+        "节点",
+        "迁移"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.597055
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.586557
+        }
+      ]
+    },
+    {
+      "id": "q06",
+      "required_terms_found": [],
+      "required_terms": [
+        "消费者",
+        "队列",
+        "限流"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.540813
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.52052
+        }
+      ]
+    },
+    {
+      "id": "q07",
+      "required_terms_found": [],
+      "required_terms": [
+        "单向",
+        "双向",
+        "HTTP"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.53737
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.451958
+        }
+      ]
+    },
+    {
+      "id": "q08",
+      "required_terms_found": [],
+      "required_terms": [
+        "指数退避",
+        "心跳",
+        "重放"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.564443
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.547742
+        }
+      ]
+    },
+    {
+      "id": "q09",
+      "required_terms_found": [],
+      "required_terms": [
+        "语音起点",
+        "缓冲",
+        "吞字"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.496371
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.504372
+        }
+      ]
+    },
+    {
+      "id": "q10",
+      "required_terms_found": [],
+      "required_terms": [
+        "partial",
+        "预取",
+        "final"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.612002
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.592742
+        }
+      ]
+    },
+    {
+      "id": "q11",
+      "required_terms_found": [],
+      "required_terms": [
+        "排名",
+        "倒数",
+        "融合"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.73406
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.618021
+        }
+      ]
+    },
+    {
+      "id": "q12",
+      "required_terms_found": [],
+      "required_terms": [
+        "词频",
+        "逆文档频率",
+        "文档长度"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.524149
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.48526
+        }
+      ]
+    },
+    {
+      "id": "q13",
+      "required_terms_found": [],
+      "required_terms": [
+        "嵌入",
+        "相似度",
+        "近邻"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.628436
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.602731
+        }
+      ]
+    },
+    {
+      "id": "q14",
+      "required_terms_found": [],
+      "required_terms": [
+        "系统输出",
+        "环回",
+        "PCM"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.533871
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.537595
+        }
+      ]
+    },
+    {
+      "id": "q15",
+      "required_terms_found": [],
+      "required_terms": [
+        "窗口",
+        "捕获",
+        "DWM"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.565081
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.517752
+        }
+      ]
+    },
+    {
+      "id": "q16",
+      "required_terms_found": [],
+      "required_terms": [
+        "生产者",
+        "消费者",
+        "背压"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.634023
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.535894
+        }
+      ]
+    },
+    {
+      "id": "q17",
+      "required_terms_found": [],
+      "required_terms": [
+        "请求",
+        "首个token",
+        "延迟"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.446371
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.457666
+        }
+      ]
+    },
+    {
+      "id": "q18",
+      "required_terms_found": [],
+      "required_terms": [
+        "429",
+        "退避",
+        "抖动"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.574855
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.520515
+        }
+      ]
+    },
+    {
+      "id": "q19",
+      "required_terms_found": [],
+      "required_terms": [
+        "引用",
+        "阈值",
+        "资料不足"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.564993
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.567368
+        }
+      ]
+    },
+    {
+      "id": "q20",
+      "required_terms_found": [],
+      "required_terms": [
+        "speaker",
+        "提问方",
+        "过滤"
+      ],
+      "chunks": [
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\使用与常见问题.md",
+          "category": "产品",
+          "score": 0.66859
+        },
+        {
+          "source": "E:\\面试猴\\面试猴-app\\engine\\knowledge\\面试猴产品说明.md",
+          "category": "产品",
+          "score": 0.607521
+        }
+      ]
+    }
+  ],
+  "phase7": [
+    {
+      "id": "q01",
+      "required_terms_found": [],
+      "required_terms": [
+        "检索",
+        "生成",
+        "知识库"
+      ],
+      "queries": [
+        "什么是RAG？",
+        "什么是拉格？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q02",
+      "required_terms_found": [],
+      "required_terms": [
+        "副本",
+        "ACK",
+        "持久化"
+      ],
+      "queries": [
+        "Kafka如何保证消息可靠？",
+        "卡夫卡如何保证消息可靠？",
+        "快福卡如何保证消息可靠？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q03",
+      "required_terms_found": [],
+      "required_terms": [
+        "版本",
+        "快照",
+        "并发"
+      ],
+      "queries": [
+        "MVCC的原理是什么？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q04",
+      "required_terms_found": [],
+      "required_terms": [
+        "顺序写",
+        "内存表",
+        "Compaction"
+      ],
+      "queries": [
+        "LSM-Tree为什么适合写密集场景？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q05",
+      "required_terms_found": [],
+      "required_terms": [
+        "哈希环",
+        "节点",
+        "迁移"
+      ],
+      "queries": [
+        "一致性哈希解决什么问题？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q06",
+      "required_terms_found": [],
+      "required_terms": [
+        "消费者",
+        "队列",
+        "限流"
+      ],
+      "queries": [
+        "背压机制有什么作用？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q07",
+      "required_terms_found": [],
+      "required_terms": [
+        "单向",
+        "双向",
+        "HTTP"
+      ],
+      "queries": [
+        "SSE和WebSocket有什么区别？",
+        "SSE和web socket有什么区别？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q08",
+      "required_terms_found": [],
+      "required_terms": [
+        "指数退避",
+        "心跳",
+        "重放"
+      ],
+      "queries": [
+        "WebSocket断线后如何安全重连？",
+        "web socket断线后如何安全重连？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q09",
+      "required_terms_found": [],
+      "required_terms": [
+        "语音起点",
+        "缓冲",
+        "吞字"
+      ],
+      "queries": [
+        "VAD为什么需要pre-roll？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q10",
+      "required_terms_found": [],
+      "required_terms": [
+        "partial",
+        "预取",
+        "final"
+      ],
+      "queries": [
+        "什么是推测检索？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q11",
+      "required_terms_found": [],
+      "required_terms": [
+        "排名",
+        "倒数",
+        "融合"
+      ],
+      "queries": [
+        "RRF如何融合检索结果？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q12",
+      "required_terms_found": [],
+      "required_terms": [
+        "词频",
+        "逆文档频率",
+        "文档长度"
+      ],
+      "queries": [
+        "BM25的核心因素有哪些？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q13",
+      "required_terms_found": [],
+      "required_terms": [
+        "嵌入",
+        "相似度",
+        "近邻"
+      ],
+      "queries": [
+        "向量检索的基本原理是什么？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q14",
+      "required_terms_found": [],
+      "required_terms": [
+        "系统输出",
+        "环回",
+        "PCM"
+      ],
+      "queries": [
+        "WASAPI Loopback采集的是什么？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q15",
+      "required_terms_found": [],
+      "required_terms": [
+        "窗口",
+        "捕获",
+        "DWM"
+      ],
+      "queries": [
+        "WDA_EXCLUDEFROMCAPTURE有什么作用？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q16",
+      "required_terms_found": [],
+      "required_terms": [
+        "生产者",
+        "消费者",
+        "背压"
+      ],
+      "queries": [
+        "异步队列如何实现模块解耦？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q17",
+      "required_terms_found": [],
+      "required_terms": [
+        "请求",
+        "首个token",
+        "延迟"
+      ],
+      "queries": [
+        "TTFT表示什么？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q18",
+      "required_terms_found": [],
+      "required_terms": [
+        "429",
+        "退避",
+        "抖动"
+      ],
+      "queries": [
+        "限流错误应该如何重试？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q19",
+      "required_terms_found": [],
+      "required_terms": [
+        "引用",
+        "阈值",
+        "资料不足"
+      ],
+      "queries": [
+        "RAG如何抑制幻觉？",
+        "拉格如何抑制幻觉？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    },
+    {
+      "id": "q20",
+      "required_terms_found": [],
+      "required_terms": [
+        "speaker",
+        "提问方",
+        "过滤"
+      ],
+      "queries": [
+        "说话人分离在实时问答中有什么用？"
+      ],
+      "product_filtered": true,
+      "chunks": []
+    }
+  ],
+  "limitation": "仅评测检索片段是否包含标注术语，不调用 LLM；当前知识库文档范围会限制召回上限。"
+}

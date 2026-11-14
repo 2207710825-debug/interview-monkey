@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>面试猴 · 实时知识辅助</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f17;--panel:#121927;--line:#263149;--text:#edf3ff;--muted:#8fa1bd;--accent:#61dafb;--green:#45d483;--warn:#ffbd5b;--danger:#ff6b7a}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% 0,#18233a 0,var(--bg) 35%);color:var(--text);font:14px/1.55 Inter,"Segoe UI","Microsoft YaHei",sans-serif}
+    header{position:sticky;top:0;z-index:2;padding:14px 20px;background:rgba(11,15,23,.92);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+    .bar,.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.bar{justify-content:space-between}.brand{font-size:18px;font-weight:750}.status{display:flex;gap:14px;color:var(--muted)}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--muted)}.on{background:var(--green)}.error{background:var(--danger)}
+    .controls{margin-top:12px}button,select,input{border:1px solid var(--line);background:#172033;color:var(--text);border-radius:9px;padding:8px 11px}button{cursor:pointer}button.primary{background:var(--accent);border-color:var(--accent);color:#06101a;font-weight:700}button:disabled{opacity:.45;cursor:not-allowed}
+    main{display:grid;grid-template-columns:1.05fr .8fr 1.35fr;gap:12px;padding:14px;min-height:calc(100vh - 125px)}.panel{display:flex;min-width:0;flex-direction:column;background:rgba(18,25,39,.94);border:1px solid var(--line);border-radius:14px;overflow:hidden}.panel h2{margin:0;padding:13px 15px;border-bottom:1px solid var(--line);font-size:14px}.content{padding:14px;overflow:auto;flex:1}.partial{color:var(--muted);font-style:italic}.final{padding:7px 0;border-bottom:1px solid rgba(38,49,73,.55)}.speaker{color:var(--accent);font-size:12px;margin-right:8px}.corrected{display:inline-block;margin-left:7px;padding:0 5px;border:1px solid var(--green);border-radius:99px;color:var(--green);font-size:10px}.question{font-size:18px;line-height:1.55}.answer{font-size:15px;white-space:normal}.answer strong{color:#73e5ff;background:rgba(97,218,251,.09);padding:0 2px;border-radius:3px}.source{display:inline-block;margin:4px 4px 0 0;padding:2px 7px;color:var(--muted);border:1px solid var(--line);border-radius:99px;font-size:11px}.empty{color:var(--muted)}
+    .ask,.question-actions{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}.ask input{flex:1;min-width:0}.question-actions{align-items:center}.question-actions .hint{margin-right:auto;color:var(--muted);font-size:11px}.question[contenteditable="true"]{outline:2px solid var(--accent);outline-offset:-2px;background:#172033}.privacy{display:none;padding:8px 12px;border:1px solid var(--warn);color:var(--warn);border-radius:8px}.metrics b{color:var(--text)}
+    @media(max-width:950px){main{grid-template-columns:1fr}.panel{min-height:280px}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">面试猴 · 实时专业知识辅助</div>
+    <div class="status">
+      <span><i id="captureDot" class="dot"></i>采集：<b id="captureState">停止</b></span>
+      <span><i id="asrDot" class="dot"></i>ASR：<b id="asrState">空闲</b></span>
+      <span class="metrics">TTFT <b id="ttft">--</b> ms · 端到端 <b id="e2e">--</b> ms</span>
+    </div>
+  </div>
+  <div class="controls">
+    <select id="source"><option value="loopback">系统声音（提问方）</option><option value="mic">麦克风（仅上下文）</option><option value="mic_question">麦克风（提问方）</option><option value="both">系统声音 + 麦克风</option></select>
+    <button id="start" class="primary">开始采集</button><button id="pause" disabled>暂停</button><button id="stop" disabled>停止</button>
+    <button id="clear">清空上下文</button><select id="knowledge"><option value="engine/knowledge">全部知识库</option></select>
+    <label><input id="localMode" type="checkbox" checked> 仅本地模式</label>
+    <span id="privacy" class="privacy">启用第三方服务前，必须确认音频/文本会被发送到外部。</span>
+  </div>
+</header>
+<main>
+  <section class="panel"><h2>① 实时转写</h2><div id="transcripts" class="content"><div class="empty">开始采集后，partial 会以灰色斜体显示。</div></div></section>
+  <section class="panel"><h2>② 当前问题</h2><div id="question" class="content question"><span class="empty">等待提问方问题…</span></div><div id="sources" class="content" style="flex:0 0 auto"></div><div class="question-actions"><span id="correctionHint" class="hint">发现错词可人工修改</span><button id="editQuestion">修改转写</button><button id="saveQuestion" hidden>保存并重新回答</button><button id="cancelQuestion" hidden>取消</button></div></section>
+  <section class="panel"><h2>③ 流式回答</h2><div id="answer" class="content answer"><span class="empty">回答将在这里流式出现。</span></div><div class="ask"><input id="manual" placeholder="也可以输入问题验证闭环"><button id="send">发送</button></div></section>
+</main>
+<script>
+const $=s=>document.querySelector(s), sessionId=crypto.randomUUID();
+let capturing=false, paused=false, answerBuffer='', pendingTokens='', renderQueued=false, requestStarted=0, firstTokenArrived=0, firstRendered=false, activeTrace='', autoScroll=true, currentQuestionRaw='', questionBeforeEdit='', lastFinalTranscript=null;
+const partialEls=new Map();
+const answerBox=$('#answer');
+answerBox.addEventListener('scroll',()=>{autoScroll=answerBox.scrollHeight-answerBox.scrollTop-answerBox.clientHeight<40});
+function setStatus(s){
+  const cap=s.capture||'stopped', asr=s.asr||'idle'; $('#captureState').textContent=cap; $('#asrState').textContent=asr;
+  $('#captureDot').className='dot '+(cap==='capturing'?'on':cap==='error'?'error':''); $('#asrDot').className='dot '+(asr==='connected'?'on':'');
+}
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+function safeMarkdown(md){
+  let text=escapeHtml(md), opens=(text.match(/\*\*/g)||[]).length; if(opens%2) text=text.replace(/\*\*([^*]*)$/,'@@OPEN@@$1');
+  text=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/@@OPEN@@/g,'**').replace(/\n/g,'<br>'); return text;
+}
+function scheduleRender(){if(renderQueued)return;renderQueued=true;requestAnimationFrame(()=>{renderQueued=false;answerBuffer+=pendingTokens;pendingTokens='';answerBox.innerHTML=safeMarkdown(answerBuffer);if(!firstRendered&&firstTokenArrived){firstRendered=true;const renderMs=performance.now()-firstTokenArrived,e2e=performance.now()-requestStarted;$('#e2e').textContent=Math.round(e2e);console.info(JSON.stringify({event:'frontend_latency',trace_id:activeTrace,render_ms:+renderMs.toFixed(3),end_to_end_ms:+e2e.toFixed(3)}))}if(autoScroll)answerBox.scrollTop=answerBox.scrollHeight})}
+function transcript(t){
+  if($('#transcripts .empty'))$('#transcripts').innerHTML='';
+  const key=t.utterance_id||`legacy:${t.channel||'unknown'}`;
+  if(t.kind==='partial'){
+    let partialEl=partialEls.get(key);
+    if(!partialEl){partialEl=document.createElement('div');partialEl.className='partial';partialEl.dataset.utteranceId=key;partialEls.set(key,partialEl);$('#transcripts').append(partialEl)}
+    partialEl.textContent=t.text;
+  }else{
+    const partialEl=partialEls.get(key);if(partialEl){partialEl.remove();partialEls.delete(key)}
+    lastFinalTranscript=t;const row=document.createElement('div');row.className='final';row.dataset.utteranceId=key;const details=[];if(t.raw_text)details.push(`原始：${t.raw_text}`);if(t.pass1_text)details.push(`第一遍：${t.pass1_text}`);if(t.corrections?.length)details.push(`改动：${t.corrections.map(c=>`${c.raw}→${c.corrected}（${c.reason}，${c.score}）`).join('；')}`);if(details.length)row.title=details.join('\n');row.innerHTML=`<span class="speaker">${escapeHtml(t.speaker_id||t.channel)}</span>${escapeHtml(t.text)}${t.corrected?'<span class="corrected">已校正</span>':''}`;$('#transcripts').append(row)
+  }
+  $('#transcripts').scrollTop=$('#transcripts').scrollHeight;
+}
+function questionDecision(q){if(q.is_question){currentQuestionRaw=q.normalized_query;$('#question').textContent=q.normalized_query;const t=lastFinalTranscript;const details=[];if(t?.raw_text)details.push(`原始：${t.raw_text}`);if(t?.corrections?.length)details.push(`改动：${t.corrections.map(c=>`${c.raw}→${c.corrected}（${c.reason}，${c.score}）`).join('；')}`);$('#question').title=details.join('\n');requestStarted=performance.now()}}
+function handleAnswer(e){
+  const kind=e.event||e.type;
+  if(kind==='meta'){const meta=e.data||e;if(meta.question){currentQuestionRaw=meta.question;$('#question').textContent=meta.question}if(meta.llm_correction?.changes?.length){const notes=meta.llm_correction.changes.map(c=>`${c.from}→${c.to}（${c.reason||'LLM纠错'}）`).join('；');$('#question').title=[$('#question').title,`LLM改动：${notes}`].filter(Boolean).join('\n')}answerBuffer='';pendingTokens='';firstTokenArrived=0;firstRendered=false;answerBox.innerHTML='';requestStarted=requestStarted||performance.now();activeTrace=e.trace_id||meta.trace_id||'';$('#sources').innerHTML=(meta.sources||e.sources||[]).map(s=>`<span class="source">${escapeHtml(s.chunk_id)} · ${escapeHtml(s.section||s.source)}</span>`).join('')}
+  if(kind==='token'){if(!answerBuffer&&!pendingTokens&&requestStarted){firstTokenArrived=performance.now();$('#ttft').textContent=Math.round(firstTokenArrived-requestStarted)}pendingTokens+=(e.data?.delta??e.delta??'');scheduleRender()}
+  if(kind==='done'){const m=e.data?.metrics||e.metrics||{};if(m.ttft_ms!=null)$('#ttft').textContent=Math.round(m.ttft_ms);if(m.end_to_end_ms!=null)$('#e2e').textContent=Math.round(m.end_to_end_ms)}
+  if(kind==='error'){answerBox.innerHTML=`<span style="color:var(--danger)">${escapeHtml(e.data?.message||e.message||'生成失败')}</span>`}
+}
+const events=new EventSource('/api/events');
+events.addEventListener('status',e=>setStatus(JSON.parse(e.data)));events.addEventListener('transcript',e=>transcript(JSON.parse(e.data)));events.addEventListener('question_decision',e=>questionDecision(JSON.parse(e.data)));events.addEventListener('answer',e=>handleAnswer(JSON.parse(e.data)));
+async function post(url,body={}){const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});return r.json()}
+$('#start').onclick=async()=>{const r=await post('/api/capture/start',{mode:$('#source').value,session_id:sessionId});setStatus(r);capturing=!!r.ok;$('#start').disabled=capturing;$('#pause').disabled=!capturing;$('#stop').disabled=!capturing};
+$('#stop').onclick=async()=>{setStatus(await post('/api/capture/stop'));capturing=false;paused=false;$('#start').disabled=false;$('#pause').disabled=true;$('#stop').disabled=true};
+$('#pause').onclick=async()=>{if(!paused){await $('#stop').onclick();paused=true;$('#pause').textContent='继续';$('#pause').disabled=false}else{paused=false;$('#pause').textContent='暂停';await $('#start').onclick()}};
+$('#clear').onclick=async()=>{await post('/api/context/clear',{session_id:sessionId});partialEls.clear();currentQuestionRaw='';lastFinalTranscript=null;$('#transcripts').innerHTML='<div class="empty">上下文已清空。</div>';$('#question').innerHTML='<span class="empty">等待提问方问题…</span>';$('#question').removeAttribute('title');answerBuffer='';answerBox.innerHTML='<span class="empty">回答将在这里流式出现。</span>'};
+$('#localMode').onchange=()=>{$('#privacy').style.display=$('#localMode').checked?'none':'inline-block'};
+$('#knowledge').onchange=async()=>{const r=await post('/api/knowledge/switch',{path:$('#knowledge').value});if(!r.ok)alert(r.detail||r.error||'知识库切换失败')};
+async function askQuestion(q){q=(q||'').trim();if(!q)return;currentQuestionRaw=q;$('#question').textContent=q;requestStarted=performance.now();answerBuffer='';pendingTokens='';answerBox.innerHTML='';const r=await fetch('/api/answer/stream',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,session_id:sessionId})});const reader=r.body.getReader(),decoder=new TextDecoder();let buffer='';while(true){const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});const blocks=buffer.split('\n\n');buffer=blocks.pop();for(const block of blocks){let event='message',data='{}';for(const line of block.split('\n')){if(line.startsWith('event:'))event=line.slice(6).trim();if(line.startsWith('data:'))data=line.slice(5).trim()}handleAnswer({event,data:JSON.parse(data)})}}}
+async function ask(){const q=$('#manual').value.trim();if(q)await askQuestion(q)}
+function finishQuestionEdit(){const box=$('#question');box.contentEditable='false';$('#editQuestion').hidden=false;$('#saveQuestion').hidden=true;$('#cancelQuestion').hidden=true}
+$('#editQuestion').onclick=()=>{const box=$('#question');questionBeforeEdit=(currentQuestionRaw||box.textContent).trim();if(!questionBeforeEdit)return;box.textContent=questionBeforeEdit;box.contentEditable='true';box.focus();$('#editQuestion').hidden=true;$('#saveQuestion').hidden=false;$('#cancelQuestion').hidden=false};
+$('#cancelQuestion').onclick=()=>{$('#question').textContent=questionBeforeEdit;finishQuestionEdit()};
+$('#saveQuestion').onclick=async()=>{const raw=questionBeforeEdit.trim(),corrected=$('#question').textContent.trim();if(!corrected){alert('修改后的问题不能为空');return}finishQuestionEdit();if(raw!==corrected){const saved=await post('/api/glossary/corrections',{raw,corrected});if(!saved.ok){alert(saved.detail||'纠错记录保存失败');return}const suggestion=saved.alias_suggestion;if(suggestion&&confirm(`是否将“${suggestion.alias}”加入“${suggestion.term}”的 aliases？`)){const updated=await post('/api/glossary/aliases',suggestion);if(!updated.ok)alert(updated.detail||'aliases 更新失败')}$('#correctionHint').textContent='已在本机记录本次纠错'}currentQuestionRaw=corrected;await askQuestion(corrected)};
+$('#send').onclick=ask;$('#manual').addEventListener('keydown',e=>{if(e.key==='Enter')ask()});fetch('/api/status').then(r=>r.json()).then(setStatus);fetch('/api/knowledge').then(r=>r.json()).then(r=>{if(r.items?.length){const select=$('#knowledge');select.innerHTML='';for(const item of r.items){const option=document.createElement('option');option.value=item.path;option.textContent=item.name;option.dataset.category=item.category||'';select.append(option)}}});
+</script>
+</body>
+</html>

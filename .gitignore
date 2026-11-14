@@ -1,0 +1,31 @@
+# Python cache and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv*/
+venv/
+
+# Packaged applications and generated build output
+build*/
+dist*/
+*.exe
+*.bak
+*.pkg
+
+# Local credentials, user state, and recordings
+.env*
+!.env.example
+.workbuddy/
+engine/corrections.json
+config/glossary.candidates.yaml
+samples/loop*.wav
+samples/*.raw
+
+# Logs are local by default; keep the requested work record
+logs/*
+!logs/worklog.md
+*.log
+
+# OS files
+Thumbs.db
+.DS_Store

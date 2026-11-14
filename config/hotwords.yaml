@@ -1,0 +1,13 @@
+hotwords:
+  - term: RAG
+    weight: 10
+    aliases: [拉格]
+  - term: Kafka
+    weight: 9
+    aliases: [卡夫卡, 快福卡]
+  - term: WebSocket
+    weight: 8
+    aliases: [web socket]
+  - term: LLM
+    weight: 8
+    aliases: [大语言模型]

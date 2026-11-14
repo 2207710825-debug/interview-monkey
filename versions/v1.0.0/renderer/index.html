@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>面试猴 · 会议实时总结助手</title>
+<style>
+  :root{
+    --bg:#f3efe8; --side:#fbf8f2; --card:#ffffff; --ink:#2b2620; --sub:#8a8272;
+    --brand:#f59e0b; --brand-dark:#d97706; --brand-soft:#fef3e2;
+    --green:#059669; --red:#dc2626; --blue:#2563eb; --amber:#d97706;
+    --line:#ece5d8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;overflow:hidden;}
+
+  .app{display:flex;height:100vh;}
+
+  /* ===== 左侧导航栏 ===== */
+  .sidebar{width:190px;min-width:190px;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 12px;}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 16px;}
+  .brand .logo{width:44px;height:44px;border-radius:14px;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 10px rgba(245,158,11,.35);}
+  .brand b{font-size:20px;}
+  .brand small{display:block;color:var(--sub);font-size:11px;font-weight:400;line-height:1.3;}
+
+  .sidebar nav{display:flex;flex-direction:column;gap:4px;flex:1;overflow-y:auto;}
+  .sidebar nav button{
+    display:flex;align-items:center;gap:9px;padding:11px 14px;border:none;background:transparent;
+    border-radius:12px;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer;text-align:left;width:100%;
+  }
+  .sidebar nav button:hover{background:#f3ecdf;}
+  .sidebar nav button.active{background:var(--brand);color:#fff;box-shadow:0 4px 10px rgba(245,158,11,.35);}
+  .nav-sep{height:1px;background:var(--line);margin:8px 6px;}
+  .nav-group{font-size:11px;color:var(--sub);padding:6px 14px 2px;letter-spacing:1px;}
+  .side-foot{padding-top:12px;}
+  .local-badge{background:var(--brand-soft);color:var(--brand-dark);font-size:11px;padding:8px 10px;border-radius:10px;text-align:center;font-weight:600;}
+
+  /* ===== 主区 ===== */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .topbar{
+    display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid var(--line);
+    padding:10px 16px;flex-wrap:wrap;
+  }
+  .chip{display:flex;flex-direction:column;align-items:center;background:#faf7f1;border:1px solid var(--line);border-radius:10px;padding:5px 12px;min-width:86px;cursor:pointer;}
+  .chip b{font-size:13px;}
+  .chip span{font-size:10px;color:var(--sub);line-height:1.3;text-align:center;}
+  .chip:hover{border-color:var(--brand);}
+  .chip.primary{background:var(--brand-soft);border-color:var(--brand);}
+  .chip.primary b{color:var(--brand-dark);}
+  .top-right{margin-left:auto;display:flex;gap:8px;align-items:center;}
+  .top-right button{padding:8px 14px;border:1px solid var(--line);background:#fff;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink);}
+  .top-right button.on{background:var(--brand);color:#fff;border-color:var(--brand);}
+
+  .content{flex:1;overflow-y:auto;padding:16px 20px 40px;}
+  .module{display:none;max-width:880px;margin:0 auto;}
+  .module.show{display:block;}
+
+  /* 警示横幅（面试狗样式） */
+  .banner{display:flex;align-items:center;gap:8px;background:var(--brand-soft);border:1px solid #f6d9a8;color:#92600a;border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:16px;}
+
+  /* 圆点分节标题（面试狗样式） */
+  .sec-title{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;margin:0 0 10px;}
+  .sec-title::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--brand);flex:none;}
+  .sec-gap{height:18px;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:14px;}
+  .muted{color:var(--sub);font-size:13px;}
+  .kicker{font-size:12px;color:var(--sub);letter-spacing:.5px;margin-bottom:2px;}
+
+  .recbtn{display:block;width:100%;padding:20px;border:none;border-radius:14px;font-size:21px;font-weight:700;color:#fff;cursor:pointer;background:var(--brand);transition:transform .05s;margin-top:8px;}
+  .recbtn:active{transform:scale(.98);}
+  .recbtn.rec{background:var(--red);animation:pulse 1.2s infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4);}50%{box-shadow:0 0 0 14px rgba(220,38,38,0);}}
+  .ghost{background:#fff;color:var(--ink);border:1px solid var(--line);}
+  .ghost.rec{background:#fff;color:var(--red);border-color:var(--red);}
+
+  .timer{font-size:36px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0 2px;}
+  .live-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--red);margin-right:6px;}
+
+  .stream{background:#0f172a;color:#e2e8f0;border-radius:14px;padding:16px;font-size:16px;min-height:140px;max-height:280px;overflow-y:auto;}
+  .stream .seg{margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #1e293b;}
+  .stream .t{color:#64748b;font-size:11px;}
+  .stream .txt{white-space:pre-wrap;}
+  .empty{color:var(--sub);font-size:14px;}
+
+  .pill{display:inline-block;background:var(--brand-soft);color:var(--brand-dark);font-size:12px;padding:2px 10px;border-radius:20px;margin:0 6px 6px 0;}
+  .chipk{background:#f6f2ea;border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:14px;margin:0 6px 6px 0;display:inline-block;}
+  .deci{border-left:3px solid var(--green);padding:4px 0 4px 10px;margin:6px 0;font-size:14px;}
+  .todo{border-left:3px solid var(--amber);padding:4px 0 4px 10px;margin:6px 0;font-size:14px;}
+  .qline{border-left:3px solid var(--brand);padding:4px 0 4px 10px;margin:6px 0;font-size:14px;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr;}}
+
+  #qaInput,#bankSearch,#manualBox{font-family:inherit;}
+  #qaInput{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:16px;margin-top:10px;}
+  #bankSearch{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:15px;}
+  #manualBox{width:100%;min-height:60px;padding:10px;border:1px solid var(--line);border-radius:12px;font-size:15px;}
+
+  .btn{display:inline-block;padding:10px 18px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink);margin-top:10px;}
+  .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .chip-btn{padding:6px 14px;border:1px solid var(--line);border-radius:20px;background:#fff;font-size:13px;cursor:pointer;margin:0 6px 6px 0;color:var(--ink);font-weight:600;}
+  .chip-btn.on{background:var(--brand);color:#fff;border-color:var(--brand);}
+  #evalTotal{font-size:38px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;line-height:1.1;}
+  #evalTotal small{font-size:14px;font-weight:600;color:var(--sub);}
+  .dim-row{display:flex;align-items:center;gap:10px;margin:8px 0 2px;font-size:13px;}
+  .dim-row .nm{width:78px;color:var(--sub);flex:none;}
+  .dim-row .bar{flex:1;height:8px;background:#efe9df;border-radius:6px;overflow:hidden;}
+  .dim-row .bar i{display:block;height:100%;background:var(--brand);border-radius:6px;}
+  .dim-row .sc{width:34px;text-align:right;font-weight:700;}
+  .sug{border-left:3px solid var(--blue);padding:4px 0 4px 10px;margin:6px 0;font-size:14px;}
+
+  /* 陪练 */
+  .question{font-size:23px;font-weight:700;line-height:1.45;margin:4px 0;}
+  .cat-tag{display:inline-block;background:var(--brand-soft);color:var(--brand-dark);font-size:12px;padding:3px 10px;border-radius:20px;margin-bottom:8px;}
+  .stat3{display:flex;gap:10px;margin-bottom:14px;}
+  .stat3 div{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;}
+  .stat3 b{font-size:22px;color:var(--brand-dark);display:block;}
+  .stat3 span{font-size:12px;color:var(--sub);}
+  #answerBox{min-height:84px;background:var(--brand-soft);border-radius:12px;padding:14px;font-size:17px;margin-top:12px;}
+  .ref{background:#f0fdf4;border-left:4px solid var(--green);border-radius:8px;padding:12px 14px;margin-top:12px;font-size:15px;display:none;}
+  .ref.show{display:block;}
+  .ref li{margin:4px 0;}
+  .q-item{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer;background:#fff;}
+  .q-item:hover{background:var(--brand-soft);}
+  .q-item .n{font-size:12px;color:var(--sub);margin-top:2px;}
+  .q-item .go{font-size:11px;color:var(--brand-dark);font-weight:700;}
+  .hist-item{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:14px;cursor:default;background:#fff;}
+  .hist-item:hover{background:var(--brand-soft);}
+  .hist-ans{white-space:pre-wrap;color:var(--sub);margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .hist-ans.open{display:block;overflow:visible;}
+  .hist-acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .hist-acts button{font-size:12.5px;padding:5px 11px;border-radius:9px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink);font-family:inherit;}
+  .hist-acts button:hover{background:var(--brand-soft);border-color:var(--brand);}
+  .hist-acts button.del{color:var(--red);border-color:#eec9c9;}
+  .hist-acts button.del:hover{background:#fdecec;}
+  .hist-extra{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--brand-soft);font-size:13.5px;line-height:1.7;white-space:pre-wrap;}
+
+  footer{color:var(--sub);font-size:12px;text-align:center;margin-top:16px;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:#d8d0c2;border-radius:8px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== 左侧导航 ===== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🐒</div>
+      <div><b>面试猴</b><small>语音会议纪要 · 面试陪练</small></div>
+    </div>
+    <nav id="sideNav">
+      <div class="nav-group">会议助手</div>
+      <button data-nav="live" class="active">🎙 会议助手</button>
+      <button data-nav="summary">📋 会议纪要</button>
+      <button data-nav="qa">❓ 疑问解答</button>
+      <button data-nav="meetings">🕘 会议记录</button>
+      <div class="nav-sep"></div>
+      <div class="nav-group">智能助手</div>
+      <button data-nav="ai">🤖 智能问答</button>
+      <button data-nav="cfg">⚙️ 模型设置</button>
+      <div class="nav-sep"></div>
+      <div class="nav-group">面试陪练</div>
+      <button data-nav="practice">🎯 面试陪练</button>
+      <button data-nav="bank">📚 练习题库</button>
+      <button data-nav="review">📖 练习记录</button>
+      <div class="nav-sep"></div>
+      <button data-nav="about">❔ 使用说明</button>
+    </nav>
+    <div class="side-foot"><div class="local-badge">🔒 纯本地存储 · 不上传</div></div>
+  </aside>
+
+  <!-- ===== 主区 ===== -->
+  <div class="main">
+    <div class="topbar">
+      <div class="chip primary" id="chipRec" title="开始/结束会议"><b>Ctrl+M</b><span>开始 · 结束会议</span></div>
+      <div class="chip" id="chipAsk" title="提问/加入记录"><b>Ctrl+↵</b><span>提问 · 加入记录</span></div>
+      <div class="chip" id="chipFind" title="搜索题库"><b>Ctrl+F</b><span>搜索题库</span></div>
+      <div class="chip" title="切换模块"><b>Ctrl+1~4</b><span>会议 · 纪要 · 解答 · 陪练</span></div>
+      <div class="top-right">
+        <button id="btnTop" title="让窗口始终置顶，方便边开会边看">📌 窗口置顶</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="banner">⚠️ 面试猴是<b>陪练与纪要工具</b>：请勿在正式面试、考试中实时作弊使用；请把真本事带到现场。</div>
+
+      <!-- ===== 会议助手 ===== -->
+      <div class="module show" id="mod-live">
+        <div class="card">
+          <div class="sec-title">环境准备</div>
+          <p class="muted" style="margin:0 0 8px;">使用前，请确保麦克风可用；浏览器内核建议 Chrome / Edge（本应用内置 WebView2）。</p>
+          <div class="muted" id="srState"></div>
+          <div class="sec-gap"></div>
+          <div class="kicker">实时录音 · 转文字</div>
+          <div class="timer" id="timer">00:00</div>
+          <div class="muted" style="text-align:center;" id="recState">点击下方按钮开始记录会议</div>
+          <button class="recbtn" id="btnRec">🎙 开始会议</button>
+          <div class="stream" id="stream"><span class="empty">会议内容会实时显示在这里…</span></div>
+          <div style="margin-top:10px;">
+            <textarea id="manualBox" placeholder="语音不可用时，可在这里粘贴 / 输入会议内容，点「加入记录」"></textarea>
+            <button class="btn" id="btnManualAdd">➕ 加入记录</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="sec-title">实时要点（随会议自动更新）</div>
+          <div class="grid2">
+            <div><h3 style="margin:0 0 6px;">🔑 高频关键词</h3><div id="kwBox"><span class="empty">暂无</span></div></div>
+            <div><h3 style="margin:0 0 6px;">💰 数字 / 金额 / 时间</h3><div id="numBox"><span class="empty">暂无</span></div></div>
+          </div>
+          <div class="sec-gap"></div>
+          <h3 style="margin:0 0 6px;">✅ 已确认的结论 / 决定</h3><div id="deciBox"><span class="empty">暂无</span></div>
+          <h3 style="margin:12px 0 6px;">📌 待办 / 行动项</h3><div id="todoBox"><span class="empty">暂无</span></div>
+        </div>
+      </div>
+
+      <!-- ===== 会议纪要 ===== -->
+      <div class="module" id="mod-summary">
+        <div class="card">
+          <div class="sec-title">自动生成的会议纪要</div>
+          <div id="summaryBox"><p class="empty">开完会点「结束会议」后，这里会自动生成纪要。</p></div>
+          <button class="btn primary" id="btnCopySummary">📋 复制纪要</button>
+          <button class="btn" id="btnDownload">⬇️ 下载全文 + 纪要 (.txt)</button>
+        </div>
+      </div>
+
+      <!-- ===== 疑问解答 ===== -->
+      <div class="module" id="mod-qa">
+        <div class="card">
+          <div class="sec-title">对本次会议提问</div>
+          <p class="muted">例如：刚说价格是多少？最后定了什么？谁负责跟进？</p>
+          <input id="qaInput" placeholder="输入你的问题…">
+          <button class="btn primary" id="btnAsk">提问</button>
+          <div id="qaAnswer"></div>
+        </div>
+        <div class="card">
+          <div class="sec-title">会议中被提到的疑问</div>
+          <div id="qaList"><span class="empty">暂无</span></div>
+        </div>
+      </div>
+
+      <!-- ===== 会议记录 ===== -->
+      <div class="module" id="mod-meetings">
+        <div class="card">
+          <div class="sec-title">历史会议</div>
+          <p class="muted">点「打开纪要」回看那场会议的内容与总结，也可以单独删除某一条。</p>
+          <div id="historyList"><p class="empty">还没有会议记录。</p></div>
+          <button class="btn" id="btnClearHist">🗑 清空会议记录</button>
+        </div>
+      </div>
+
+      <!-- ===== 智能问答 ===== -->
+      <div class="module" id="mod-ai">
+        <div class="card">
+          <div class="sec-title">语音智能问答</div>
+          <p class="muted">按下开关直接说问题，语音转文字后自动检索并回答。装了 Ollama 会用本地大模型。</p>
+          <button class="recbtn" id="btnAIVoice">🎤 开始语音提问</button>
+          <div class="muted" id="aiListening" style="margin-top:8px;text-align:center;">点击开关后对着麦克风说出你的问题</div>
+          <div id="aiQuestion" style="margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;display:none;"></div>
+          <div id="aiStatus" class="muted" style="margin-top:10px;"></div>
+          <div id="aiAnswer" style="margin-top:12px;font-size:15px;white-space:pre-wrap;background:var(--brand-soft);border-radius:12px;padding:14px;min-height:60px;"><span class="empty">回答会显示在这里。</span></div>
+          <div id="aiSources" class="muted" style="margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <!-- ===== 模型设置 ===== -->
+      <div class="module" id="mod-cfg">
+        <div class="card">
+          <div class="sec-title">模型接入设置</div>
+          <p class="muted">接入免费/低价大模型，让「智能问答」和「面试陪练」的回答更聪明。API Key 只保存在本地。</p>
+          <div style="margin-top:12px;">
+            <label class="muted" style="display:block;margin-bottom:6px;">模型服务商</label>
+            <select id="cfgProvider" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:12px;font-size:15px;">
+              <option value="auto">自动（优先本地 Ollama，否则规则兜底）</option>
+              <option value="ollama">本地 Ollama（离线）</option>
+              <option value="deepseek">DeepSeek（deepseek-chat）</option>
+              <option value="zhipu">智谱 GLM（glm-4-flash 免费版）</option>
+              <option value="openai">OpenAI 兼容接口</option>
+            </select>
+          </div>
+          <div style="margin-top:12px;">
+            <label class="muted" style="display:block;margin-bottom:6px;">API Key（在线模型必填；Ollama 可留空）</label>
+            <input id="cfgKey" type="password" placeholder="sk-…" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:12px;font-size:15px;font-family:inherit;">
+          </div>
+          <div style="margin-top:12px;">
+            <label class="muted" style="display:block;margin-bottom:6px;">模型名（留空用默认）</label>
+            <input id="cfgModel" placeholder="deepseek-chat / glm-4-flash" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:12px;font-size:15px;font-family:inherit;">
+            <div id="cfgModelHint" class="muted" style="margin-top:6px;font-size:12.5px;"></div>
+          </div>
+          <button class="btn primary" id="btnCfgSave" style="margin-top:14px;">💾 保存设置</button>
+          <div id="cfgStatus" class="muted" style="margin-top:10px;"></div>
+          <div class="tip" style="background:var(--brand-soft);border-radius:10px;padding:10px 14px;font-size:13px;margin-top:14px;">
+            💡 DeepSeek 与智谱 GLM 均提供免费额度：去官网注册 → 创建 API Key → 粘贴到上面即可。无 Key 也能用（走本地规则兜底 / Ollama）。
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 面试陪练 ===== -->
+      <div class="module" id="mod-practice">
+        <div class="stat3">
+          <div><b id="stCount">0</b><span>已练题数</span></div>
+          <div><b id="stMin">0</b><span>累计分钟</span></div>
+          <div><b id="stDays">0</b><span>坚持天数</span></div>
+        </div>
+        <div class="card">
+          <div class="sec-title">当前题目</div>
+          <span class="cat-tag" id="curCat">—</span>
+          <div class="question" id="curQ">点击「换一题」开始练习</div>
+          <div class="muted" id="curFrom">—</div>
+          <div id="answerBox"><span class="empty">你的回答会显示在这里（语音自动转文字）</span></div>
+          <button class="recbtn" id="btnSpeak">🔊 朗读题目</button>
+          <div style="display:flex;gap:10px;margin-top:10px;">
+            <button class="recbtn ghost" id="btnPRec" style="margin-top:0;">🎤 开始回答</button>
+            <button class="recbtn ghost" id="btnNext" style="margin-top:0;">🔄 换一题</button>
+          </div>
+          <button class="btn" id="btnRef" style="width:100%;">💡 查看参考答案</button>
+          <div class="ref" id="refBox"></div>
+        </div>
+
+        <!-- 回答评估卡片 -->
+        <div class="card" id="evalCard" style="display:none;">
+          <div class="sec-title">回答评分</div>
+          <div id="evalTotal"></div>
+          <div id="evalDims" style="margin-top:12px;"></div>
+          <div class="sec-gap"></div>
+          <div class="sec-title">优化建议</div>
+          <div id="evalSug"></div>
+          <div class="sec-gap"></div>
+          <div class="sec-title">参考答案</div>
+          <div id="evalRef" class="muted" style="font-size:14px;line-height:1.7;"></div>
+          <button class="btn" id="btnReEval" style="margin-top:10px;">🔄 重新评估</button>
+        </div>
+      </div>
+
+      <!-- ===== 练习题库 ===== -->
+      <div class="module" id="mod-bank">
+        <div class="card">
+          <div class="sec-title">搜索题库</div>
+          <input id="bankSearch" placeholder="搜索知识点 / 关键词（如：YOLO、ICP、点云、过拟合、Transformer）">
+          <div id="bankChips" style="margin-top:12px;"></div>
+          <div class="muted" id="bankCount" style="margin-top:8px;"></div>
+        </div>
+        <div id="bankList"></div>
+      </div>
+
+      <!-- ===== 练习记录 ===== -->
+      <div class="module" id="mod-review">
+        <div class="card">
+          <div class="sec-title">练习历史</div>
+          <p class="muted">每条记录都能展开看完整回答、对照参考答案、重新评分，也可以单独删除。</p>
+          <div id="reviewList"><p class="empty">还没有练习记录，先去「面试陪练」答几道题吧。</p></div>
+          <button class="btn" id="btnClearPrac">🗑 清空练习记录</button>
+        </div>
+      </div>
+
+      <!-- ===== 使用说明 ===== -->
+      <div class="module" id="mod-about">
+        <div class="card">
+          <div class="sec-title">面试猴能帮你什么</div>
+          <ul>
+            <li>🎙 <b>会议助手</b>：实时转写会议内容，自动提取关键词、金额、结论、待办</li>
+            <li>❓ <b>疑问解答</b>：对会议内容提问，快速找到相关片段</li>
+            <li>🎯 <b>面试陪练</b>：念题给你听，你口头作答，对照参考要点复盘</li>
+            <li>📚 <b>练习题库</b>：视觉 / 3D视觉算法工程师方向系统化题库</li>
+            <li>🔒 <b>纯本地</b>：所有数据存在你自己设备上，不上传</li>
+          </ul>
+          <div class="sec-gap"></div>
+          <div class="sec-title">快捷键</div>
+          <p class="muted">Ctrl+M 开始/结束会议 · Ctrl+Enter 提问/加入记录 · Ctrl+F 搜索题库 · Ctrl+1~4 切换会议/纪要/解答/陪练 · 顶栏「📌 窗口置顶」可让窗口悬浮。</p>
+          <div class="sec-gap"></div>
+          <div class="sec-title">正直使用</div>
+          <p class="muted">面试猴帮你<b>提前准备</b>、练好表达、记清会议。请勿在正式面试/考试中实时作弊使用。</p>
+        </div>
+      </div>
+
+      <footer>面试猴 · 把会议说清楚、把面试练顺 · 数据只存本地，不上传</footer>
+    </div>
+  </div>
+</div>
+
+<script src="./bank.js"></script>
+<script>
+/* ================= 通用 ================= */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function copyText(t){ if(navigator.clipboard) navigator.clipboard.writeText(t); else { const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); } }
+function fmt(sec){ const m=String(Math.floor(sec/60)).padStart(2,"0"); const s=String(sec%60).padStart(2,"0"); return m+":"+s; }
+
+/* 模块切换（会议=1 纪要=2 解答=3 陪练=4） */
+const NAV_MAP = {live:"live", summary:"summary", qa:"qa", meetings:"meetings", ai:"ai", cfg:"cfg", practice:"practice", bank:"bank", review:"review", about:"about"};
+function switchMod(t){
+  $$("#sideNav button").forEach(b=>b.classList.toggle("active", b.dataset.nav===t));
+  $$(".module").forEach(m=>m.classList.toggle("show", m.id==="mod-"+t));
+  if(t==="summary") renderSummaryTab();
+  if(t==="qa") renderQA();
+  if(t==="meetings") renderHistory();
+  if(t==="ai") aiLoadStatus();
+  if(t==="cfg") cfgLoad();
+  if(t==="bank"){ renderBankChips(); renderBank(); }
+  if(t==="review") renderReview();
+  if(t==="practice") renderStats();
+}
+$$("#sideNav button").forEach(b=>b.onclick=()=>switchMod(b.dataset.nav));
+
+/* 窗口置顶（pywebview） */
+const btnTop=$("#btnTop");
+btnTop.onclick=async()=>{
+  if(!(window.pywebview&&window.pywebview.api)){ alert("请在桌面 App（面试猴.exe）中使用窗口置顶"); return; }
+  try{ const on=await window.pywebview.api.toggle_topmost(); btnTop.classList.toggle("on", !!on); btnTop.textContent = on?"📌 已置顶":"📌 窗口置顶"; }catch(e){}
+};
+
+/* ================= 会议助手 ================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const hasSR = !!SR;
+if(hasSR) $("#srState").innerHTML='✅ 语音识别可用（内置 Chromium 内核）';
+else $("#srState").innerHTML='⚠️ 当前环境不支持语音识别，可使用下方手动录入。';
+
+let rec=null, isRec=false, timerId=null, sec=0;
+let segs=[], finalText="";
+
+function startRec(){
+  if(!hasSR){ $("#recState").textContent="当前环境不支持语音转文字，请使用手动录入。"; return; }
+  rec=new SR(); rec.lang="zh-CN"; rec.interimResults=true; rec.continuous=true;
+  rec.onresult=e=>{
+    let inter="", fin="";
+    for(let i=e.resultIndex;i<e.results.length;i++){ const t=e.results[i][0].transcript; if(e.results[i].isFinal) fin+=t; else inter+=t; }
+    if(fin){ finalText+=fin; segs.push({t:fmt(sec), txt:fin.trim()}); }
+    renderStream(inter); updateLive(inter);
+  };
+  rec.onend=()=>{ if(isRec){ try{rec.start()}catch(e){} } };
+  rec.onerror=()=>{ if(isRec){ try{rec.start()}catch(e){} } };
+  rec.start(); isRec=true; sec=0;
+  timerId=setInterval(()=>{ sec++; $("#timer").textContent=fmt(sec); },1000);
+  $("#btnRec").textContent="⏹ 结束会议"; $("#btnRec").classList.add("rec");
+  $("#recState").innerHTML='<span class="live-dot"></span>正在记录…';
+}
+function stopRec(){
+  isRec=false; if(rec){ try{rec.stop()}catch(e){} rec=null; } clearInterval(timerId);
+  $("#btnRec").textContent="🎙 开始会议"; $("#btnRec").classList.remove("rec");
+  $("#recState").textContent="会议已结束";
+  saveSession();
+}
+function toggleRec(){ isRec?stopRec():startRec(); }
+$("#btnRec").onclick=toggleRec; $("#chipRec").onclick=toggleRec;
+
+function renderStream(interim){
+  const el=$("#stream"); let html="";
+  segs.slice(-40).forEach(s=>{ html+=`<div class="seg"><div class="t">${s.t}</div><div class="txt">${escapeHtml(s.txt)}</div></div>`; });
+  if(interim) html+=`<div class="seg"><div class="t">${fmt(sec)} · 识别中</div><div class="txt">${escapeHtml(interim)}</div></div>`;
+  el.innerHTML=html||'<span class="empty">会议内容会实时显示在这里…</span>'; el.scrollTop=el.scrollHeight;
+}
+
+/* 本地规则分析引擎 */
+function sentences(text){ return text.split(/[。！？!?；;\n]+/).map(s=>s.trim()).filter(s=>s.length>1); }
+function topKeywords(text){
+  const stops=new Set("我们你们他们这个那个一个就是然后所以因为但是如果已经还有可以没有不是知道可能应该什么怎么这样那样现在今天明天大家好谢谢对的是的了和与及在要就都很更让被把".split(""));
+  const words={}; const clean=text.replace(/[，。！？!?；;：:、\s\d]/g,"");
+  for(const n of [2,3]) for(let i=0;i+n<=clean.length;i++){ const w=clean.slice(i,i+n); if(stops.has(w)) continue; words[w]=(words[w]||0)+1; }
+  return Object.entries(words).sort((a,b)=>b[1]-a[1]).slice(0,10).map(x=>x[0]);
+}
+function extractNumbers(text){
+  const out=new Set(); let m;
+  const re=/(\d+(?:\.\d+)?)\s*(元|块|万|千|百|折|%|％|号|点|分|月|日|天|年|小时|次|件|个|台|斤|公斤|公里|度|人|单|盒|箱|套|米)/g;
+  while((m=re.exec(text))) out.add(m[0]);
+  const reT=/(今天|明天|后天|下周|周[一二三四五六日天]|本[月周]|(\d+)月(\d+)[日号]|(上午|下午|晚上|中午)\d+点)/g;
+  while((m=reT.exec(text))) out.add(m[0]);
+  return [...out].slice(0,14);
+}
+function extractDecisions(text){ return sentences(text).filter(s=>/(决定|确定|结论|定下来|就按|就这么|答应|同意|成交|签|通过|没问题|可以|行，|好，|拍板|最终)/.test(s)).slice(-8); }
+function extractTodos(text){ return sentences(text).filter(s=>/(要|需要|安排|记得|负责|下次|抓紧|落实|联系|跟进|准备|尽快|改天|回头|去办|去做|订|预约)/.test(s)).slice(-8); }
+function extractQuestions(text){ return sentences(text).filter(s=>/[？?]$/.test(s)||/(吗|呢|怎么|多少|什么|哪里|是否|能不能|可不可以|为什么|咋)/.test(s)).slice(-10); }
+function updateLive(interim){
+  const text=finalText+" "+interim;
+  $("#kwBox").innerHTML=topKeywords(text).map(w=>`<span class="pill">${escapeHtml(w)}</span>`).join("")||'<span class="empty">暂无</span>';
+  $("#numBox").innerHTML=extractNumbers(text).map(n=>`<span class="chipk">${escapeHtml(n)}</span>`).join("")||'<span class="empty">暂无</span>';
+  $("#deciBox").innerHTML=extractDecisions(text).map(s=>`<div class="deci">${escapeHtml(s)}</div>`).join("")||'<span class="empty">暂无</span>';
+  $("#todoBox").innerHTML=extractTodos(text).map(s=>`<div class="todo">${escapeHtml(s)}</div>`).join("")||'<span class="empty">暂无</span>';
+}
+
+/* 会议存储：Electron IPC / pywebview+浏览器用 localStorage */
+const inElectron = !!(window.meetingStore);
+async function loadSessions(){ return inElectron ? await window.meetingStore.list() : (JSON.parse(localStorage.getItem("mh_meet")||"{}").sessions||[]); }
+async function persistSession(s){ if(inElectron){ await window.meetingStore.save(s); } else { const d=JSON.parse(localStorage.getItem("mh_meet")||"{}"); d.sessions=d.sessions||[]; d.sessions=d.sessions.filter(x=>x.id!==s.id); d.sessions.push(s); localStorage.setItem("mh_meet",JSON.stringify(d)); } }
+async function clearSessions(){ if(inElectron){ await window.meetingStore.clear(); } else { localStorage.setItem("mh_meet",JSON.stringify({sessions:[]})); } }
+async function deleteSession(id){
+  /* 删除单条会议记录；Electron 通道没有单条删除接口，就用 clear+重写兜底 */
+  if(inElectron){
+    const rest=((await window.meetingStore.list())||[]).filter(x=>x.id!==id);
+    await window.meetingStore.clear();
+    for(const s of rest) await window.meetingStore.save(s);
+  } else {
+    const d=JSON.parse(localStorage.getItem("mh_meet")||"{}");
+    d.sessions=(d.sessions||[]).filter(x=>x.id!==id);
+    localStorage.setItem("mh_meet",JSON.stringify(d));
+  }
+}
+
+function buildSummary(){
+  const text=finalText; if(!text) return {summary:"", text:""};
+  const kw=topKeywords(text), nums=extractNumbers(text), dec=extractDecisions(text), todo=extractTodos(text), qs=extractQuestions(text);
+  let s="【会议纪要 · 自动生成】\n时长："+fmt(sec)+"\n\n";
+  s+="— 核心话题 / 关键词 —\n"+(kw.join("、")||"无")+"\n\n";
+  s+="— 关键数字 / 金额 / 时间 —\n"+(nums.join("　")||"无")+"\n\n";
+  s+="— 已确认的结论 —\n"+(dec.length?dec.map(x=>"· "+x).join("\n"):"无")+"\n\n";
+  s+="— 待办事项 —\n"+(todo.length?todo.map(x=>"· "+x).join("\n"):"无")+"\n\n";
+  s+="— 会议中提出的疑问 —\n"+(qs.length?qs.map(x=>"· "+x).join("\n"):"无")+"\n";
+  return {summary:s, text:text};
+}
+async function saveSession(){
+  const text=finalText; if(!text.trim()) return;
+  const {summary}=buildSummary();
+  await persistSession({id:Date.now(), time:new Date().toLocaleString("zh-CN"), dur:fmt(sec), text, summary});
+  renderHistory();
+}
+function renderSummaryTab(){ const {summary}=buildSummary(); $("#summaryBox").innerHTML=summary?("<pre style='white-space:pre-wrap;font-size:14px;'>"+escapeHtml(summary)+"</pre>"):'<p class="empty">开完会点「结束会议」后，这里会自动生成纪要。</p>'; }
+$("#btnCopySummary").onclick=()=>{ const {summary}=buildSummary(); if(!summary) return alert("还没有纪要"); copyText(summary); alert("纪要已复制"); };
+$("#btnDownload").onclick=()=>{
+  const {summary,text}=buildSummary(); if(!text) return alert("还没有会议内容。");
+  const blob=new Blob([summary+"\n\n====== 完整转写 ======\n\n"+text],{type:"text/plain;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="会议纪要-"+new Date().toLocaleDateString("zh-CN")+".txt"; a.click();
+};
+
+/* 疑问解答 */
+function ask(question){
+  const text=finalText; if(!text.trim()) return "还没有会议内容，先开会或手动粘贴文字。";
+  if(!question.trim()) return "请输入问题。";
+  const q=question.trim();
+  const keys=q.replace(/[？?吗呢什么怎么多少哪里是否能不能可不可以为什么咋]/g,"");
+  const qWords=topKeywords(keys).concat(keys.split(""));
+  const scored=sentences(text).map(s=>{ let sc=0; for(const w of qWords){ if(w&&s.includes(w)) sc++; } return {s,sc}; }).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc).slice(0,4);
+  if(!scored.length) return "没有在会议里找到和「"+q+"」直接相关的内容，可以换个说法再试。";
+  return "根据会议内容，相关的片段：\n"+scored.map((x,i)=>(i+1)+". "+x.s).join("\n");
+}
+function doAsk(){ $("#qaAnswer").innerText=ask($("#qaInput").value); }
+$("#btnAsk").onclick=doAsk;
+$("#qaInput").addEventListener("keydown",e=>{ if(e.key==="Enter") doAsk(); });
+function renderQA(){ $("#qaList").innerHTML=extractQuestions(finalText).map(q=>`<div class="qline">${escapeHtml(q)}</div>`).join("")||'<span class="empty">暂无</span>'; }
+
+/* 手动录入 */
+function manualAdd(){ const v=$("#manualBox").value.trim(); if(!v) return; finalText+=finalText?"\n"+v:v; segs.push({t:fmt(sec), txt:v}); $("#manualBox").value=""; renderStream(); updateLive(); }
+$("#btnManualAdd").onclick=manualAdd;
+
+/* 会议历史 */
+async function renderHistory(){
+  const sessions=await loadSessions();
+  const el=$("#historyList");
+  if(!sessions.length){ el.innerHTML='<p class="empty">还没有会议记录。</p>'; return; }
+  el.innerHTML="";
+  for(let i=sessions.length-1;i>=0;i--){
+    const s=sessions[i];
+    const div=document.createElement("div"); div.className="hist-item";
+    div.innerHTML=`<div style="font-weight:700;">${escapeHtml(s.time)}</div>
+      <div class="muted">时长 ${escapeHtml(s.dur||"")} · ${(s.text||"").length} 字</div>
+      <div class="hist-acts">
+        <button data-act="open">打开纪要</button>
+        <button data-act="del" class="del">删除</button>
+      </div>`;
+    div.querySelector('button[data-act="open"]').onclick=(e)=>{
+      e.stopPropagation();
+      finalText=s.text; sec=0; switchMod("summary");
+    };
+    div.querySelector('button[data-act="del"]').onclick=async(e)=>{
+      e.stopPropagation();
+      if(!confirm("删除这条会议记录？\n\n时间："+(s.time||"")+"\n（删除后不可恢复）")) return;
+      await deleteSession(s.id);
+      renderHistory();
+    };
+    el.appendChild(div);
+  }
+}
+$("#btnClearHist").onclick=async()=>{ if(confirm("确定清空所有会议记录吗？")){ await clearSessions(); renderHistory(); } };
+
+/* ================= 面试陪练 ================= */
+const BANK = window.QUESTION_BANK && window.QUESTION_BANK.length ? window.QUESTION_BANK : [
+  {cat:"通用 · 行为面", from:"算法工程师面试必问", q:"请先做个自我介绍。", ref:["学校/专业 + 工作年限 + 主攻方向","一句话说清核心能力","用量化结果收尾"]},
+  {cat:"深度学习基础", from:"视觉算法面试必问", q:"什么是过拟合？怎么解决？", ref:["定义：训练好、泛化差","数据：更多数据、数据增强","正则：L1/L2、Dropout、BN","早停、降复杂度、迁移学习"]},
+];
+const pstore={ get(){ try{return JSON.parse(localStorage.getItem("mh_data")||"{}")}catch(e){return{}} }, set(d){ localStorage.setItem("mh_data", JSON.stringify(d)); } };
+function initData(){ const d=pstore.get(); if(!d.history)d.history=[]; if(!d.stats)d.stats={count:0,min:0,days:[]}; return d; }
+function renderStats(){ const d=initData(); $("#stCount").textContent=d.stats.count; $("#stMin").textContent=d.stats.min; $("#stDays").textContent=d.stats.days.length; }
+
+let curIdx=-1, pRec=null, pRecOn=false, pFinal="";
+function speak(text){ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang="zh-CN"; u.rate=0.95; const v=speechSynthesis.getVoices().find(v=>v.lang.startsWith("zh")); if(v)u.voice=v; speechSynthesis.speak(u); }
+function resetAnswer(){ pFinal=""; $("#answerBox").innerHTML='<span class="empty">你的回答会显示在这里（语音自动转文字）</span>'; }
+function showQ(b){ curIdx=BANK.indexOf(b); $("#curCat").textContent=b.cat; $("#curQ").textContent=b.q; $("#curFrom").textContent="—— "+b.from; $("#refBox").classList.remove("show"); resetAnswer(); $("#evalCard").style.display="none"; }
+function pickQuestion(){ showQ(BANK[Math.floor(Math.random()*BANK.length)]); }
+$("#btnNext").onclick=pickQuestion;
+$("#btnSpeak").onclick=()=>{ const b=BANK[curIdx]; if(b) speak(b.q); };
+$("#btnRef").onclick=()=>{ const b=BANK[curIdx]; if(!b)return;
+  $("#refBox").innerHTML="<b>参考答案（按要点组织，练到能脱稿说出）</b><ol style='margin:6px 0 0 18px;'>"+b.ref.map(r=>`<li>${escapeHtml(r)}</li>`).join("")+"</ol>";
+  $("#refBox").classList.toggle("show"); };
+
+function pStart(){
+  if(!hasSR){ $("#answerBox").innerHTML='<span class="empty">语音不可用，请在会议助手的录入框练习，或换 Chrome/Edge。</span>'; return; }
+  const sr=new SR(); sr.lang="zh-CN"; sr.interimResults=true; sr.continuous=true;
+  sr.onresult=e=>{ let inter="",fin=""; for(let i=e.resultIndex;i<e.results.length;i++){ const t=e.results[i][0].transcript; if(e.results[i].isFinal)fin+=t; else inter+=t; }
+    if(fin)pFinal+=fin; $("#answerBox").innerHTML=escapeHtml((pFinal+" "+inter).trim())||'<span class="empty">正在听…请说话</span>'; };
+  sr.onend=()=>{ if(pRecOn){ try{sr.start()}catch(e){} } };
+  sr.onerror=()=>{ if(pRecOn){ try{sr.start()}catch(e){} } };
+  sr.start(); pRec=sr; pRecOn=true;
+  $("#btnPRec").textContent="⏹ 结束回答"; $("#btnPRec").classList.add("rec");
+}
+function pStop(){
+  pRecOn=false; if(pRec){ try{pRec.stop()}catch(e){} pRec=null; }
+  if(pFinal.trim()){
+    const d=initData(); const b=BANK[curIdx];
+    d.history.push({q:b.q, cat:b.cat, a:pFinal.trim(), time:new Date().toLocaleString("zh-CN")});
+    d.stats.count++; d.stats.min++;
+    const today=new Date().toDateString(); if(!d.stats.days.includes(today)) d.stats.days.push(today);
+    pstore.set(d); renderStats();
+    lastAns={q:b.q, ref:b.ref||[], a:pFinal.trim()};
+    autoEvaluate(lastAns);
+  } else $("#answerBox").innerHTML='<span class="empty">（这次没有作答）</span>';
+  $("#btnPRec").textContent="🎤 开始回答"; $("#btnPRec").classList.remove("rec");
+}
+$("#btnPRec").onclick=()=>{ pRecOn?pStop():pStart(); };
+
+/* 回答评估：本地规则打分（离线），装了 Ollama 时参考答案更完整 */
+let lastAns={q:"", ref:[], a:""}, evalBusy=false;
+function evalColor(s){ return s>=70?"var(--green)":(s>=50?"var(--amber)":"var(--red)"); }
+async function autoEvaluate(item){
+  $("#evalCard").style.display="block";
+  $("#evalTotal").innerHTML="<span class='empty'>评估中…</span>";
+  $("#evalDims").innerHTML=""; $("#evalSug").innerHTML=""; $("#evalRef").textContent="";
+  if(!hasEngine()){ $("#evalTotal").innerHTML="<span class='empty'>桌面 App 内可评分（浏览器预览无本地引擎）</span>"; return; }
+  if(evalBusy) return; evalBusy=true;
+  try{
+    const r=await window.pywebview.api.evaluate_answer(item.q, item.ref, item.a);
+    renderEval(r);
+  }catch(e){ $("#evalTotal").innerHTML="<span class='empty'>评估失败："+escapeHtml(e.message||"")+"</span>"; }
+  evalBusy=false;
+}
+function renderEval(r){
+  const t=r.total||0;
+  $("#evalTotal").innerHTML=`<span style="color:${evalColor(t)};">${t}</span><small> / 100</small>`;
+  $("#evalDims").innerHTML=(r.dims||[]).map(d=>`
+    <div class="dim-row"><span class="nm">${escapeHtml(d.name)}</span>
+      <span class="bar"><i style="width:${Math.max(3,Math.min(100,d.score))}%;background:${evalColor(d.score)};"></i></span>
+      <span class="sc">${d.score}</span></div>
+    <div class="muted" style="margin:0 0 8px 88px;font-size:12px;">${escapeHtml(d.detail||"")}</div>`).join("");
+  $("#evalSug").innerHTML=(r.suggestions||[]).map(s=>`<div class="sug">${escapeHtml(s)}</div>`).join("");
+  $("#evalRef").innerHTML = r.reference
+    ? escapeHtml(r.reference)
+    : ("<ol style='margin:6px 0 0 18px;'>"+lastAns.ref.map(p=>`<li>${escapeHtml(p)}</li>`).join("")+"</ol>");
+}
+$("#btnReEval").onclick=()=>{ if(lastAns.a) autoEvaluate(lastAns); };
+
+/* 题库（搜索 + 分类） */
+let bankFilter={cat:"", kw:""};
+function renderBankChips(){
+  const cats=[...new Set(BANK.map(b=>b.cat))];
+  const box=$("#bankChips");
+  box.innerHTML='<button class="chip-btn'+(bankFilter.cat===""?" on":"")+'" data-c="">全部</button>';
+  cats.forEach(c=>{ box.innerHTML+=`<button class="chip-btn${bankFilter.cat===c?" on":""}" data-c="${escapeHtml(c)}">${escapeHtml(c)}</button>`; });
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>{ bankFilter.cat=b.dataset.c; renderBankChips(); renderBank(); });
+}
+function renderBank(){
+  const d=initData(); const done=new Set(d.history.map(h=>h.q));
+  const kw=bankFilter.kw.trim().toLowerCase();
+  let list=BANK.filter(b=>(!bankFilter.cat||b.cat===bankFilter.cat)&&(!kw||(b.q+" "+b.cat+" "+b.from).toLowerCase().includes(kw)));
+  const total=list.length; const LIMIT=200; list=list.slice(0,LIMIT);
+  $("#bankCount").textContent=`共 ${total} 题`+(total>LIMIT?`，已显示前 ${LIMIT} 题，请用搜索缩小范围`:"");
+  const el=$("#bankList"); el.innerHTML="";
+  list.forEach(b=>{
+    const el2=document.createElement("div"); el2.className="q-item";
+    el2.innerHTML=`<div><div style="font-weight:600;">${done.has(b.q)?"✅ ":""}${escapeHtml(b.q)}</div><div class="n">${escapeHtml(b.from)}</div></div><span class="go">练一题 →</span>`;
+    el2.onclick=()=>{ showQ(b); switchMod("practice"); };
+    el.appendChild(el2);
+  });
+}
+$("#bankSearch").addEventListener("input",()=>{ bankFilter.kw=$("#bankSearch").value; renderBank(); });
+
+/* 题库索引：练习记录里按题干回查参考答案 */
+let bankMap=null;
+function bankRef(q){
+  if(!bankMap){ bankMap=new Map(); BANK.forEach(b=>{ if(b && b.q && !bankMap.has(b.q)) bankMap.set(b.q,b); }); }
+  const b=bankMap.get(q);
+  return b ? (b.ref||[]) : [];
+}
+
+function renderReview(){
+  const d=initData(); const el=$("#reviewList");
+  if(!d.history.length){ el.innerHTML='<p class="empty">还没有练习记录。</p>'; return; }
+  el.innerHTML="";
+  for(let i=d.history.length-1;i>=0;i--){
+    const h=d.history[i];
+    const div=document.createElement("div"); div.className="hist-item"; div.dataset.i=i;
+    div.innerHTML=`<div style="font-weight:700;">${escapeHtml(h.q)}</div>
+      <div class="muted">${escapeHtml(h.cat||"")} · ${escapeHtml(h.time||"")}</div>
+      <div class="hist-ans" id="hans-${i}">${escapeHtml(h.a||"(未作答)")}</div>
+      <div class="hist-acts">
+        <button data-act="toggle">展开答案</button>
+        <button data-act="ref">参考答案</button>
+        <button data-act="score">重新评分</button>
+        <button data-act="del" class="del">删除</button>
+      </div>
+      <div class="hist-extra" id="hext-${i}" style="display:none;"></div>`;
+    el.appendChild(div);
+  }
+}
+
+/* 记录操作：展开 / 参考答案 / 重新评分 / 删除单条 */
+$("#reviewList").addEventListener("click",async(evt)=>{
+  const btn=evt.target.closest("button[data-act]");
+  if(!btn) return;
+  evt.stopPropagation();
+  const item=btn.closest(".hist-item"); if(!item) return;
+  const i=+item.dataset.i;
+  const d=initData(); const h=d.history[i]; if(!h) return;
+  const ans=document.getElementById("hans-"+i);
+  const box=document.getElementById("hext-"+i);
+  const act=btn.dataset.act;
+
+  if(act==="toggle"){
+    const opened=ans.classList.toggle("open");
+    btn.textContent=opened?"收起答案":"展开答案";
+    return;
+  }
+  if(act==="ref"){
+    const refs=bankRef(h.q);
+    if(box.style.display!=="none" && box.dataset.mode==="ref"){ box.style.display="none"; return; }
+    box.dataset.mode="ref";
+    box.innerHTML = refs.length
+      ? "<b>参考答案（按要点组织，练到能脱稿说出）</b><ol style='margin:6px 0 0 18px;'>"+refs.map(r=>`<li>${escapeHtml(r)}</li>`).join("")+"</ol>"
+      : "（题库中没有这道题的参考答案，可在「练习题库」里搜索同类的题）";
+    box.style.display="block";
+    return;
+  }
+  if(act==="score"){
+    if(!hasEngine()){ box.dataset.mode="score"; box.textContent="评分需要桌面 App（浏览器预览无本地引擎）"; box.style.display="block"; return; }
+    if(box.style.display!=="none" && box.dataset.mode==="score"){ box.style.display="none"; return; }
+    box.dataset.mode="score"; box.innerHTML="<span class='empty'>重新评分中…</span>"; box.style.display="block";
+    try{
+      const r=await window.pywebview.api.evaluate_answer(h.q, bankRef(h.q), h.a||"");
+      const t=r.total||0;
+      box.innerHTML=`<b>本次得分：<span style="color:${evalColor(t)};">${t}</span> / 100</b>`
+        + (r.dims||[]).map(x=>`\n· ${escapeHtml(x.name)} ${x.score} 分 — ${escapeHtml(x.detail||"")}`).join("")
+        + ((r.suggestions&&r.suggestions.length) ? "\n\n改进建议：\n"+r.suggestions.map(s=>"· "+escapeHtml(s)).join("\n") : "");
+    }catch(e){ box.textContent="评分失败："+(e.message||e); }
+    return;
+  }
+  if(act==="del"){
+    if(!confirm("删除这条练习记录？\n\n题目："+h.q)) return;
+    d.history.splice(i,1);
+    pstore.set(d);
+    renderReview(); renderStats();
+  }
+});
+
+$("#btnClearPrac").onclick=()=>{ if(confirm("确定清空所有练习记录吗？")){ const d=initData(); d.history=[]; pstore.set(d); renderReview(); renderStats(); } };
+
+/* ================= 智能问答（语音助手引擎） ================= */
+/* pywebview 的桥是异步注入的，必须在调用时动态检测，不能用加载时的快照 */
+function hasEngine(){ return !!(window.pywebview && window.pywebview.api && window.pywebview.api.ask); }
+function aiStatusText(s){
+  if(!s) return "";
+  /* 用后端自己报告的真实标签，避免"选了在线模型却显示本地 Ollama"的错标 */
+  const llm = s.llm_label || s.llm || "";
+  return "引擎：知识库 " + s.knowledge_chunks + " 段 · " + llm + (s.local_asr ? " · 本地语音识别" : "");
+}
+async function aiLoadStatus(){
+  if(!hasEngine()){ $("#aiStatus").textContent="（桌面 App 内可用，浏览器预览无本地引擎）"; return; }
+  try{ const s=await window.pywebview.api.ai_status(); $("#aiStatus").textContent=aiStatusText(s); }catch(e){}
+}
+async function aiAskText(q){
+  if(!q.trim()) return;
+  if(!hasEngine()){ $("#aiAnswer").textContent="请使用桌面 App（面试猴.exe）运行本功能，浏览器预览无本地引擎。"; return; }
+  $("#aiAnswer").innerHTML="<span class='empty'>正在检索并推理…</span>";
+  try{
+    const r=await window.pywebview.api.ask(q.trim());
+    $("#aiAnswer").textContent=r.answer;
+    $("#aiStatus").textContent=aiStatusText(r.status);
+    $("#aiSources").innerHTML = r.sources && r.sources.length
+      ? "命中知识库：" + r.sources.map(s=>"["+escapeHtml(s.title)+"] "+escapeHtml(s.text)).join(" · ")
+      : "";
+  }catch(e){
+    $("#aiAnswer").textContent="调用失败："+e.message;
+  }
+}
+
+/* 语音提问：开关按下即收音，说完自动提交 */
+let aiRec=null, aiRecOn=false, aiFinal="";
+function aiToggle(){
+  if(!hasSR){ $("#aiListening").textContent="当前环境不支持语音识别（请用 Chrome/Edge 内核）"; return; }
+  aiRecOn ? aiStopAsk() : aiStartAsk();
+}
+function aiStartAsk(){
+  aiFinal="";
+  aiRec=new SR(); aiRec.lang="zh-CN"; aiRec.interimResults=true; aiRec.continuous=false;
+  aiRec.onresult=e=>{
+    let inter="", fin="";
+    for(let i=0;i<e.results.length;i++){ const t=e.results[i][0].transcript; if(e.results[i].isFinal) fin+=t; else inter+=t; }
+    aiFinal+=fin;
+    $("#aiListening").innerHTML='<span class="live-dot"></span>正在听… '+(aiFinal+inter);
+  };
+  aiRec.onend=()=>{ if(aiRecOn) aiStopAsk(); };
+  aiRec.onerror=()=>{ if(aiRecOn) aiStopAsk(); };
+  aiRec.start(); aiRecOn=true;
+  $("#btnAIVoice").textContent="⏹ 结束提问"; $("#btnAIVoice").classList.add("rec");
+  $("#aiListening").textContent="正在听…请说问题";
+}
+function aiStopAsk(){
+  aiRecOn=false; if(aiRec){ try{aiRec.stop()}catch(e){} aiRec=null; }
+  $("#btnAIVoice").textContent="🎤 开始语音提问"; $("#btnAIVoice").classList.remove("rec");
+  const q=aiFinal.trim();
+  if(!q){ $("#aiListening").textContent="（没听清，请再按一次试试）"; return; }
+  $("#aiQuestion").style.display="block";
+  $("#aiQuestion").textContent="你的问题："+q;
+  $("#aiListening").textContent="已识别，正在回答…";
+  aiAskText(q);
+}
+$("#btnAIVoice").onclick=aiToggle;
+
+/* ================= 模型设置 ================= */
+const MODEL_PLACEHOLDER = {deepseek:"deepseek-chat", zhipu:"glm-4-flash", openai:"gpt-4o-mini", ollama:"留空自动挑选已安装模型", auto:""};
+let cfgCache=null;
+async function cfgLoad(){
+  if(!hasEngine()){ $("#cfgStatus").textContent="（桌面 App 内可设置，浏览器预览无本地引擎）"; return; }
+  try{
+    const c=await window.pywebview.api.get_config();
+    cfgCache=c;
+    $("#cfgProvider").value=c.provider||"auto";
+    $("#cfgKey").value="";
+    /* 选 Ollama 时，这里显示的是本地模型名 */
+    $("#cfgModel").value=(c.provider==="ollama" ? (c.ollama_model||"") : (c.model||""));
+    cfgRefreshHint();
+    const models=(c.ollama_models||[]).join(" / ");
+    $("#cfgStatus").textContent="当前引擎："+c.llm_label
+      + (c.ollama ? "；已安装本地模型："+models : "；未检测到本地 Ollama");
+  }catch(e){ $("#cfgStatus").textContent="读取配置失败："+e.message; }
+}
+function cfgRefreshHint(){
+  const p=$("#cfgProvider").value;
+  $("#cfgModel").placeholder=MODEL_PLACEHOLDER[p]||"模型名（留空用默认）";
+  const ms=(cfgCache&&cfgCache.ollama_models)||[];
+  $("#cfgModelHint").textContent = p==="ollama"
+    ? (ms.length ? "已安装："+ms.join(" / ")+"（填其中一个，留空自动选最小的）" : "未检测到已安装模型，请先执行：ollama pull qwen2.5:3b")
+    : "";
+}
+async function cfgSave(){
+  if(!hasEngine()) return;
+  const provider=$("#cfgProvider").value;
+  const modelName=$("#cfgModel").value.trim();
+  const cfg={provider:provider, api_key:$("#cfgKey").value.trim(),
+             model: provider==="ollama" ? "" : modelName,
+             ollama_model: provider==="ollama" ? modelName : ((cfgCache&&cfgCache.ollama_model)||"")};
+  try{
+    const r=await window.pywebview.api.save_config(cfg);
+    cfgCache=r;
+    $("#cfgKey").value="";
+    /* 服务商被按 Key 格式自动纠正时，回写下拉框让用户看到真实状态 */
+    if(r.provider && r.provider!==provider) $("#cfgProvider").value=r.provider;
+    const models=(r.ollama_models||[]).join(" / ");
+    $("#cfgStatus").textContent="已保存 · 当前引擎："+r.llm_label
+      + (models ? "；已安装本地模型："+models : "");
+    cfgRefreshHint(); aiLoadStatus();
+  }catch(e){ $("#cfgStatus").textContent="保存失败："+e.message; }
+}
+$("#btnCfgSave").onclick=cfgSave;
+$("#cfgProvider").addEventListener("change",cfgRefreshHint);
+
+/* ================= 快捷键 ================= */
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey && e.key.toLowerCase()==="m"){ e.preventDefault(); toggleRec(); }
+  else if(e.ctrlKey && e.key==="Enter"){ e.preventDefault(); if($("#qaInput").value.trim()){ switchMod("qa"); doAsk(); } else if($("#manualBox").value.trim()){ manualAdd(); } }
+  else if(e.ctrlKey && e.key.toLowerCase()==="f"){ e.preventDefault(); switchMod("bank"); $("#bankSearch").focus(); }
+  else if(e.ctrlKey && ["1","2","3","4"].includes(e.key)){ e.preventDefault(); switchMod(["live","summary","qa","practice"][+e.key-1]); }
+});
+
+/* 初始化 */
+renderHistory(); renderStats(); pickQuestion();
+if(window.speechSynthesis) speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices();
+/* pywebview 桥异步注入：就绪后刷新引擎状态 */
+window.addEventListener("pywebviewready", ()=>{ try{ aiLoadStatus(); }catch(e){} });
+if(window.pywebview && window.pywebview.api) aiLoadStatus();
+</script>
+</body>
+</html>

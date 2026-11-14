@@ -1,0 +1,71 @@
+name: ASR regression
+
+on:
+  push:
+    paths:
+      - "engine/realtime/**"
+      - "engine/asr_models*/**"
+      - "config/config.yaml"
+      - "config/glossary.yaml"
+      - "eval/asr/**"
+      - "tests/**"
+      - "scripts/check_asr_regression.py"
+      - "scripts/replay.py"
+      - "requirements-realtime.txt"
+      - ".github/workflows/asr-regression.yml"
+  pull_request:
+    paths:
+      - "engine/realtime/**"
+      - "engine/asr_models*/**"
+      - "config/config.yaml"
+      - "config/glossary.yaml"
+      - "eval/asr/**"
+      - "tests/**"
+      - "scripts/check_asr_regression.py"
+      - "scripts/replay.py"
+      - "requirements-realtime.txt"
+      - ".github/workflows/asr-regression.yml"
+  workflow_dispatch:
+
+jobs:
+  unit:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-realtime.txt numpy scipy sherpa-onnx pytest pywebview pyaudiowpatch
+      - name: Run unit and integration tests
+        run: python -X utf8 -m pytest tests -q
+
+  asr-quality:
+    # ASR 权重较大且属于离线本地资产；质量门禁在已准备模型的 Windows runner 上执行。
+    runs-on: [self-hosted, Windows, X64, asr-models]
+    needs: unit
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ASR evaluation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-realtime.txt numpy scipy sherpa-onnx
+      - name: Run local two-pass evaluation
+        shell: pwsh
+        run: |
+          $report = Join-Path $env:RUNNER_TEMP "asr-ci-candidate.md"
+          python -X utf8 eval/asr/run.py --two-pass --fast --report $report
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $candidate = [System.IO.Path]::ChangeExtension($report, ".json")
+          python -X utf8 scripts/check_asr_regression.py --candidate $candidate
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
