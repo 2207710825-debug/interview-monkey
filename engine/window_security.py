@@ -250,6 +250,11 @@ class WindowSecurityGuard:
         self._thread = None
         self._last_report = None
 
+    @property
+    def capture_excluded(self) -> bool:
+        """窗口是否真的被排除在屏幕捕获之外（可用于安全采样桌面背景）。"""
+        return self._effective_affinity == WDA_EXCLUDEFROMCAPTURE
+
     def bind_pywebview(self, window) -> None:
         self._window = window
         events = window.events

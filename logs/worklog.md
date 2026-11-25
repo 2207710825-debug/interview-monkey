@@ -66,3 +66,36 @@
 | 2026-11-14 09:01 | `gh api` Git Data API 发布并校验 Phase 2/3 两个提交对象与功能分支引用 | 远端 `feat/protocol-contract-mock` 与本地文件树一致；默认分支 `main` 保持原 SHA | GitHub `feat/protocol-contract-mock` |
 | 2026-11-14 12:33 | `node --check` 检查内嵌脚本、Python `compile()` 检查启动器；PyInstaller 构建至 `dist-shortcut` 并从 EXE 归档核对资源 | 检查通过；EXE 内含 Ctrl+Shift+M 提示、前端按钮和 `minimize_window` 调用；旧 exe 未覆盖 | `renderer/index.html`、`面试猴.py`、`dist-shortcut/面试猴.exe` |
 | 2026-11-14 13:38 | `面试猴.py` 注册 Win32 全局 `Ctrl+Shift+Down/Up`，前端同步显示快捷键并保留页面焦点回退；重新生成 `dist-shortcut\面试猴.exe` | Python 与 2 段内嵌 JS 语法检查、`git diff --check` 通过；EXE 运行日志确认两个 RegisterHotKey 成功；投递 `WM_HOTKEY` 验证最小化/恢复处理器成功。`SendInput` 未触发 `WM_HOTKEY`，故真实物理按键未端到端验证 | `面试猴.py`、`renderer/index.html`、`dist-shortcut\面试猴.exe` |
+| 2026-11-25 02:47 | 读取本机简签 `jianqian/ui/main_window.py` 中 `glass_alpha`（60–230、默认178）及 pywebview WebView2 透明窗口实现；修改面试猴窗口参数、页面表面 alpha 滑块与 iframe 同步 | 背景透明度控件值保存到 localStorage；透明背景仅作用于主要表面，文字和按钮不整体变淡；Python、两个页面脚本语法与 `git diff --check` 通过。本次未运行 pytest、未打包 EXE、未提交，避免带入现存 ASR/RAG 工作区改动 | `面试猴.py`、`renderer/index.html`、`web/realtime.html` |
+| 2026-11-25 03:05 | 在面试陪练页增加语音/文本回答切换；文本支持按钮或 Ctrl+Enter 提交，并复用既有答题历史、统计与评分流程；修正文本框字体 CSS | `renderer/index.html` 内嵌 JavaScript 语法解析通过（1 个脚本），`git diff --check` 通过；未运行 pytest、未进行桌面 GUI 手动验证、未打包 EXE | `renderer/index.html` |
+| 2026-11-25 03:39 | 在 `E:\pythondemo\gesture_canvas\web` 找到在线手势演示源码与 MediaPipe 本地资源；按用户确认的目标把握拳最小化、丢手恢复接入面试猴，复用现有 pywebview 窗口 API | ES module 语法（2 个文件）、内嵌脚本语法和 `git diff --check` 通过；7 个复制资源 SHA-256 与来源一致。未启摄像头做 GUI 实测、未运行 pytest、未重打包 EXE | `renderer/index.html`、`renderer/gesture/` |
+| 2026-11-25 06:00 | 按用户要求改善摄像头共用：停止/断流/采集停帧都会释放 MediaStream；摄像头独占失败显示 Windows 多应用共享设置指引；确认本机 Windows 11 25H2 | ES module 语法（2 个文件）、内嵌脚本语法、`git diff --check` 通过；未启用系统共享开关、未做真实摄像头双应用联测、未运行 pytest、未重打包 EXE。并行使用仍依赖 Windows/相机的多应用模式支持 | `renderer/index.html`、`renderer/gesture/control.js`、`logs/worklog.md` |
+| 2026-11-25 01:50 America/Chicago | 真实摄像头采集与释放测试：使用已有 OpenCV 5.0.0 + Windows MSMF，默认索引 0；本机唯一在线物理摄像头为 Chicony USB2.0 Camera | 单进程 23 帧、两个独立进程同时采集 105/10 帧、释放后重开 14 帧，均为 1280x720；所有采集成功且 release 后 isOpened=false，子进程全部退出。未录音、未保存图像。浏览器手势模块加载成功但停在权限等待，测试页已关闭；此结果不代表旧 EXE/WebView2 或腾讯会议联测通过。临时服务/文件已清理 | logs/camera-hardware-20261125.jsonl |
+| 2026-11-25 06:50 America/Chicago | 将背景透明度改为所有内容页面共用：原位替换背景色，覆盖侧栏、按钮、表单、卡片、弹层；移除实时问答重复铺底，iframe 与子页采用一致 color-scheme；重打包并替换根目录 EXE | Edge 实际渲染验证 10 个模块，父/子页 alpha 均由 0.235 变为 0.902，文字 opacity=1；刷新保留 76%。内嵌脚本语法、3 个现有嵌入测试、git diff --check 通过；16 个包内资源哈希与源码一致。旧版已备份。桌面自动化启动器两次失败且文件管理器窗口均最小化，未完成新版 EXE 启动复核；Windows 原生标题栏不在页面 CSS 透明度范围内 | renderer/index.html、web/realtime.html、面试猴.exe；logs/glass-20261125-*.json/log |
+
+## 2026-11-25 无边框深色玻璃 UI（继续 Codex 未完成项）
+
+| UTC 时间 | 命令/操作 | 结论 | 文件 |
+|---|---|---|---|
+| 2026-11-25 13:32 | 将主窗口改为 `transparent=True, frameless=True, easy_drag=False`，设置 `.pywebview-drag-region` 直接目标拖拽；新增最大化/关闭 API 与顶部自绘窗口按钮 | 去掉原生标题栏和整块黑色底；独立同参数 pywebview 窗口在白底上实测桌面可透过玻璃层，文字保持不透明 | `面试猴.py`、`renderer/index.html` |
+| 2026-11-25 13:32 | 新增 `theme-glass.css`：深蓝玻璃卡片、细边框、紧凑工具栏、蓝青强调色；把透明度滑块改为“背景不透明度”并将下限钉在 150/255（59%），避免旧 76% 透明度把面板和文字冲淡 | 主界面、陪练、题库、设置、AI 聚焦模式已按深色玻璃主题重排；应用级黑色背景板移除，桌面可从窗口边缘和内容底层透出 | `renderer/theme-glass.css`、`renderer/index.html` |
+| 2026-11-25 13:32 | 调整陪练按钮层级、题库 chip 换行、手势按钮图标化；补充窗口控制测试 | `pytest tests`：174 passed，177 subtests passed；JS/Python 语法检查通过 | `renderer/index.html`、`renderer/gesture/control.js`、`tests/test_embedded_realtime.py` |
+| 2026-11-25 13:32 | 重新打包并替换根目录 EXE，清理 Codex 留下的 dist/build/旧 EXE 备份 | 最终 `面试猴.exe` SHA256 `a0d5c685cbf29f14276e6c5a1789369ca1cbff927d4ff41d4e96da1e12ae0077`；包内 `renderer/index.html`、`theme-glass.css`、`web/realtime.html` 与源码哈希一致；启动后 `/api/status` 为 notes_chunks=2856、asr_terms=206 | `面试猴.exe` |
+
+### 2026-11-25 13:45 复核修复与最终包
+
+| UTC 时间 | 命令/操作 | 结论 | 文件 |
+|---|---|---|---|
+| 2026-11-25 13:45 | 按独立复核修复：玻璃控件旧绝对定位复位；横幅/提示改为高对比固定深色；最大化状态接入 `events.maximized/restored` 并同步页面；增加右下角拖拽缩放 API；侧栏标题区域可拖拽；提问按钮在手动记录有内容时直接加入记录 | `pytest tests`：174 passed，177 subtests passed；JS/Python 语法检查通过 | `renderer/theme-glass.css`、`renderer/index.html`、`面试猴.py`、`tests/test_embedded_realtime.py` |
+| 2026-11-25 13:45 | 重新打包、启动冒烟、替换根目录 EXE 并清理所有 dist/build/旧 EXE | 最终 SHA256 `498b962e8fca9577ee5aaffe4c82acc5c99cb66fef47932e7e93711d64838d01`；启动后 `/api/status` notes_chunks=2856、asr_terms=206、DeepSeek 正常；项目内只保留一个应用 exe | `面试猴.exe` |
+
+| 2026-11-25 13:55 | 针对用户圈出的窗口本体黑底，新增 `engine/desktop_backdrop.py`：利用窗口已有的 `WDA_EXCLUDEFROMCAPTURE`，每 0.8s 采样窗口背后的桌面并作为页面背景；只在本机内存/DOM 使用，不落盘。修正主题 CSS 只用 `background-color` 清底，避免覆盖采样图 | 独立测试：受保护窗口采样后关闭 WDA，截图中窗口边缘显示洋红桌面而非黑底；真实渲染页采样后 background-image 长度 169018；启动日志确认 `[backdrop] 桌面背景采样已启动`，未出现采样失败 | `engine/desktop_backdrop.py`、`engine/window_security.py`、`面试猴.py`、`renderer/theme-glass.css` |
+| 2026-11-25 13:55 | 最终重打包、启动冒烟并替换根目录 EXE | 最终 SHA256 `d5b5a259e5f0ba5c32ee966b44f620649f5ef2228fff384a9aa8e2cb442ac346`；`/api/status` notes_chunks=2856、asr_terms=206、DeepSeek 正常；项目内只保留一个 exe | `面试猴.exe` |
+
+## 2026-11-25 导入 XMind 与两份 PDF 学习资料
+
+| UTC 时间 | 命令/操作 | 结论 | 文件 |
+|---|---|---|---|
+| 2026-11-25 14:11 | 新增 `scripts/import_study_pack.py`：解析 XMind `content.json`、PDF1 目录/页面、PDF2 字号识别的问答；写入 `study_notes.jsonl`、`study_bank.json`、`study_import.json` | XMind 434 分块/91 题；神经网络 PDF 159 分块/171 题；深度学习面试 PDF 73 分块/129 题；合计新增 666 分块、391 题 | `scripts/import_study_pack.py`、`%APPDATA%/InterviewMonkey/knowledge/study_*.json*` |
+| 2026-11-25 14:12 | 加载器增加 `study_notes.jsonl`，题库合并增加 `study_bank.json`；补学习资料解析/加载测试 | 知识库总分块 3522；题库总数 1991；题库分类为 XMind 91、PDF2 129、PDF1 171；RAG 可检索 YOLOv8、深浅拷贝、C++ 指针/引用、BN 等新内容 | `engine/realtime/api/app.py`、`面试猴.py`、`tests/test_study_import.py`、loader/bank tests |
+| 2026-11-25 14:14 | 全量测试、重打包、启动冒烟并替换根目录 EXE | 178 passed，177 subtests passed；启动 `/api/status` notes_chunks=3522、asr_terms=206、DeepSeek 正常；最终 SHA256 `4bd3d8c9d22c310e5de1991763b946fd50686ab7046e39da31314a065f15d48f`；项目内只保留一个 exe | `面试猴.exe` |

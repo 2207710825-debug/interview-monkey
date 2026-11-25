@@ -16,13 +16,23 @@ log = logging.getLogger("interview_monkey.realtime.qa")
 
 
 class RealtimePipeline:
-    def __init__(self, vad, asr, detector, answer_service, bus: AsyncEventBus | None = None, qa_logger=None):
+    def __init__(
+        self,
+        vad,
+        asr,
+        detector,
+        answer_service,
+        bus: AsyncEventBus | None = None,
+        qa_logger=None,
+        transcript_logger=None,
+    ):
         self.vad = vad
         self.asr = asr
         self.detector = detector
         self.answer_service = answer_service
         self.bus = bus or AsyncEventBus()
         self.qa_logger = qa_logger
+        self.transcript_logger = transcript_logger
         self.context = ConversationContext()
         self.final_merger = AdjacentFinalMerger(window_ms=1500)
         self._answer_task: asyncio.Task | None = None
@@ -98,10 +108,14 @@ class RealtimePipeline:
                     "trace_id": tracker.trace_id if tracker else transcript.trace_id,
                     "session_id": session_id,
                     "source": "speech",
+                    "utterance_id": transcript.utterance_id,
+                    "question_start_ms": transcript.start_ms,
+                    "question_end_ms": transcript.end_ms,
                     "raw_text": transcript.raw_text or raw_question or transcript.text,
                     "corrected_text": transcript.text,
                     "corrections": [dict(item) for item in transcript.corrections],
                     "asr_engine": transcript.asr_engine,
+                    "pass1_text": transcript.pass1_text,
                     "pass1_ms": transcript.pass1_ms,
                     "pass2_ms": transcript.pass2_ms,
                     "retrieval_top_k": metadata.get("sources", []),
@@ -212,11 +226,44 @@ class RealtimePipeline:
             audio_refs=self._audio_references(transcript),
         )
 
+    def _log_transcript(self, session_id: str, transcript) -> None:
+        """把定稿转写写入本机会话历史；写失败不影响实时链路。"""
+        if self.transcript_logger is None:
+            return
+        try:
+            self.transcript_logger.append_transcript({
+                "session_id": session_id,
+                "utterance_id": transcript.utterance_id,
+                "trace_id": transcript.trace_id,
+                "channel": transcript.channel.value,
+                "speaker_id": transcript.speaker_id,
+                "text": transcript.text,
+                "raw_text": transcript.raw_text,
+                "pass1_text": transcript.pass1_text,
+                "corrections": [dict(item) for item in transcript.corrections],
+                "asr_engine": transcript.asr_engine,
+                "start_ms": transcript.start_ms,
+                "end_ms": transcript.end_ms,
+                "is_fragment": transcript.is_fragment,
+            })
+        except Exception as exc:
+            log.warning("transcript_log_write_failed error=%s", type(exc).__name__)
+
     async def _process_final(self, transcript, session_id: str) -> None:
+        self._log_transcript(session_id, transcript)
         if transcript.is_fragment:
-            decision = QuestionDecision(False, 0.0, transcript.text, "fragment")
+            decision = QuestionDecision(
+                False, 0.0, transcript.text, "fragment",
+                transcript.utterance_id, transcript.start_ms, transcript.end_ms, transcript.text,
+            )
         else:
-            decision = await self.detector.evaluate(transcript, self.context.recent())
+            decision = replace(
+                await self.detector.evaluate(transcript, self.context.recent()),
+                utterance_id=transcript.utterance_id,
+                start_ms=transcript.start_ms,
+                end_ms=transcript.end_ms,
+                text=transcript.text,
+            )
         self.context.append(transcript)
         await self._publish("question_decision", decision)
         if decision.is_question:

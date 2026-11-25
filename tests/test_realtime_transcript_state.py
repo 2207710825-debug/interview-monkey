@@ -152,13 +152,16 @@ class TestRealtimeTranscriptState(unittest.IsolatedAsyncioTestCase):
 
         root = Path(__file__).resolve().parents[1]
         html = (root / "web" / "realtime.html").read_text(encoding="utf-8")
-        self.assertIn("const partialEls=new Map()", html)
-        self.assertIn("partialEls.get(key)", html)
-        self.assertIn("partialEls.delete(key)", html)
+        self.assertIn("partials: new Map()", html)
+        self.assertIn("partialEls: new Map()", html)
+        self.assertIn("const key = item.utterance_id", html)
+        self.assertIn("state.partials.set(key", html)
+        self.assertIn("state.partials.delete(key)", html)
+        self.assertIn("state.partialEls.get(key)", html)
         self.assertIn("已校正", html)
-        self.assertIn("原始：${t.raw_text}", html)
-        self.assertIn("改动：${t.corrections.map", html)
-        self.assertIn("修改转写", html)
+        self.assertIn("原始：", html)
+        self.assertIn("改动：", html)
+        self.assertIn("修改问题并重新回答", html)
         self.assertIn("/api/glossary/corrections", html)
         self.assertIn("/api/glossary/aliases", html)
 

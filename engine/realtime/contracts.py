@@ -94,6 +94,11 @@ class QuestionDecision:
     confidence: float
     normalized_query: str
     reason: str = ""
+    # 供前端把问答卡片定位回实时转写；旧调用方只传前四个字段仍然有效。
+    utterance_id: str | None = None
+    start_ms: int | None = None
+    end_ms: int | None = None
+    text: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

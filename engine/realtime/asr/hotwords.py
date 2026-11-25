@@ -15,6 +15,15 @@ _CHINESE_TERM = re.compile(r"[\u4e00-\u9fff]{2,8}")
 _ZH_STOP = {"这个", "那个", "我们", "你们", "可以", "一个", "以及", "进行", "使用", "支持", "通过"}
 
 
+# sherpa 当前 zh_en 词表不含 +、_、- 等符号，也不能把数字开头的短语
+# 编码成热词。只把模型能安全编码的词交给解码器，其余保留在文本纠错层。
+_DECODER_TERM = re.compile(r"^[A-Za-z][A-Za-z0-9 ]{0,63}$")
+
+
+def is_decoder_term(term: str) -> bool:
+    return bool(term and _DECODER_TERM.fullmatch(term.strip()))
+
+
 def load_hotwords(path: str | Path) -> list[Hotword]:
     import yaml
 
@@ -60,11 +69,7 @@ def materialize_decoder_hotwords(
         word.term.strip() for word in hotwords
         if (
             word.weight >= min_weight
-            and word.term.strip()
-            # 当前 sherpa 词表不含连字符，也无法把以数字开头的短语编码为热词。
-            # 这些词仍保留在文本级 aliases 中，只不传给解码器，避免启动警告。
-            and "-" not in word.term
-            and not word.term[0].isdigit()
+            and is_decoder_term(word.term)
         )
     ))
     if not terms:

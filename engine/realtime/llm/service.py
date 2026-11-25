@@ -192,7 +192,14 @@ class RealtimeAnswerService:
                 "raw_question": raw_question or question,
                 "llm_correction": llm_correction,
                 "sources": [
-                    {"chunk_id": chunk.id, "source": chunk.source, "section": chunk.section, "score": chunk.score}
+                    {
+                        "chunk_id": chunk.id,
+                        "source": chunk.source,
+                        "section": chunk.section,
+                        "score": chunk.score,
+                        # 前端“上下文模式”要能直接查阅命中片段，而不只是看 chunk_id。
+                        "text": (chunk.text or "")[:400],
+                    }
                     for chunk in chunks
                 ],
                 "retrieval_queries": retrieval_meta["queries"],

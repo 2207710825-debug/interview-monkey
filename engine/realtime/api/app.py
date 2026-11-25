@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from dataclasses import asdict, is_dataclass
 from enum import Enum
 from pathlib import Path
@@ -15,9 +16,12 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from ..config import load_config
+from ..contracts import Chunk
+from ..history import RealtimeHistoryStore, valid_session_id
 from ..asr.glossary import append_alias, record_correction, suggest_alias
 from ..asr.hotwords import load_hotwords
 from ..asr.postprocess import LocalLLMTranscriptCorrector
+from ..asr.termbank import build_termbank
 from ..llm.providers import OpenAICompatLLMProvider
 from ..llm.service import RealtimeAnswerService
 from ..latency import LATENCY_METRICS
@@ -25,6 +29,7 @@ from ..mocks import MockLLMProvider
 from ..observability import QALogWriter
 from ..rag.hybrid import HybridRetriever
 from ..rag.ingest import document_category, ingest_directory
+from ..rag.vault import VaultRetriever
 from ..mock_backend import FixtureAnswerService, FixtureCaptureRuntime, MockProtocolServer, MockSettings, load_fixtures
 from .runtime import CaptureRuntime
 
@@ -79,20 +84,160 @@ def _plain(value):
     return value
 
 
-def build_default_service(config_path: str | Path | None = None) -> RealtimeAnswerService:
+def _app_llm_config() -> dict | None:
+    """读取桌面 App 设置页选择的模型。
+
+    返回 None 表示没有可用的 App 配置，继续使用 config/config.yaml。
+    用户在设置页明确选择云端 provider（如 deepseek）视为同意把“问题文本”发送到
+    云端；音频仍只在本机 ASR，不会上传。
+    """
+    appdata = os.environ.get("APPDATA")
+    path = (
+        Path(appdata) / "InterviewMonkey" / "config.json"
+        if appdata
+        else Path.home() / ".config" / "InterviewMonkey" / "config.json"
+    )
+    if not path.is_file():
+        return None
+    try:
+        from engine.config_store import ConfigStore
+        from engine import llm as legacy_llm
+
+        view = ConfigStore(str(path)).as_dict()
+    except Exception as exc:
+        log.warning("app_llm_config_load_failed error=%s", type(exc).__name__)
+        return None
+
+    provider = str(view.get("provider") or "auto").strip().lower()
+    key = str(view.get("api_key") or "").strip()
+    if provider == "auto":
+        provider = legacy_llm.detect_provider_by_key(key) or "ollama"
+    if provider == "ollama":
+        base_url = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
+        if not base_url.endswith("/v1"):
+            base_url += "/v1"
+        return {
+            "provider": "ollama",
+            "base_url": base_url,
+            "model": str(view.get("ollama_model") or "qwen2.5:3b"),
+            "api_key": "",
+            "trust_env": False,
+            "cloud_text": False,
+        }
+
+    preset = legacy_llm.PROVIDERS.get(provider)
+    if preset is None or not key:
+        return None
+    base_url = str(view.get("base_url") or "").strip() or preset["base_url"]
+    model = str(view.get("model") or "").strip() or preset["model"]
+    return {
+        "provider": provider,
+        "base_url": base_url,
+        "model": model,
+        "api_key": key,
+        "trust_env": True,
+        "cloud_text": True,
+    }
+
+
+def _notes_index_paths() -> list[Path]:
+    """本机知识库索引文件：个人笔记 + 导入题库 + 微信/PDF/XMind 资料。
+
+    这些文件使用相同的 JSONL schema；分开保存可以随时删除导入的资料，
+    不会改动用户自己的 notes.jsonl。
+    """
+    appdata = os.environ.get("APPDATA")
+    base = Path(appdata) if appdata else Path.home() / ".config"
+    directory = base / "InterviewMonkey" / "knowledge"
+    return [
+        path for path in (
+            directory / "notes.jsonl",
+            directory / "nowcoder.jsonl",
+            directory / "wechat_notes.jsonl",
+            directory / "study_notes.jsonl",
+        )
+        if path.is_file()
+    ]
+
+
+def _load_notes_chunks() -> list[Chunk] | None:
+    paths = _notes_index_paths()
+    if not paths:
+        return None
+    chunks: list[Chunk] = []
+    for path in paths:
+        try:
+            with path.open("r", encoding="utf-8") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    row = json.loads(line)
+                    text = str(row.get("text") or "").strip()
+                    if not text:
+                        continue
+                    chunks.append(Chunk(
+                        id=str(row.get("id") or len(chunks)),
+                        text=text,
+                        source=str(row.get("source") or ""),
+                        score=0.0,
+                        section=row.get("section") or None,
+                        metadata=row.get("metadata") or {},
+                    ))
+        except Exception as exc:
+            log.warning(
+                "notes_index_load_failed file=%s error=%s",
+                path.name, type(exc).__name__,
+            )
+    return chunks or None
+
+
+def build_default_service(
+    config_path: str | Path | None = None,
+    *,
+    use_app_config: bool = True,
+) -> RealtimeAnswerService:
     cfg_path = Path(config_path or PROJECT_ROOT / "config" / "config.yaml")
     cfg = load_config(cfg_path)
-    cfg.assert_cloud_allowed()
-    knowledge = Path(cfg.rag.knowledge_path)
-    if not knowledge.is_absolute():
-        knowledge = PROJECT_ROOT / knowledge
-    chunks = ingest_directory(knowledge, cfg.rag.chunk_tokens, cfg.rag.overlap_ratio)
-    retriever = HybridRetriever(chunks)
+    app_llm = _app_llm_config() if use_app_config else None
+    # App 设置页明确选择云端 provider 时，允许文本出网；音频仍只在本机 ASR。
+    if app_llm is None:
+        cfg.assert_cloud_allowed()
+    notes_chunks = _load_notes_chunks() if use_app_config else None
+    if notes_chunks:
+        # 个人笔记库优先；音频仍只在本机 ASR，问题文本才可能发给云端 LLM。
+        retriever = VaultRetriever(notes_chunks)
+        source_chunks = notes_chunks
+    else:
+        knowledge = Path(cfg.rag.knowledge_path)
+        if not knowledge.is_absolute():
+            knowledge = PROJECT_ROOT / knowledge
+        chunks = ingest_directory(knowledge, cfg.rag.chunk_tokens, cfg.rag.overlap_ratio)
+        retriever = HybridRetriever(chunks)
+        source_chunks = chunks
     glossary = Path(cfg.asr.hotwords_path)
     if not glossary.is_absolute():
         glossary = PROJECT_ROOT / glossary
-    hotwords = load_hotwords(glossary)
-    if cfg.llm.provider == "mock":
+    manual_hotwords = load_hotwords(glossary)
+    termbank = None
+    try:
+        # 从个人笔记/知识库抽取英文技术术语，与人工词库合并后交给
+        # 流式解码热词、文本纠错和问答检索共同使用。
+        termbank = build_termbank(source_chunks, manual_hotwords)
+        hotwords = list(termbank.hotwords)
+    except Exception as exc:
+        log.warning("termbank_build_failed error=%s", type(exc).__name__)
+        hotwords = list(manual_hotwords)
+    if app_llm is not None:
+        llm = OpenAICompatLLMProvider(
+            app_llm["base_url"],
+            app_llm["model"],
+            app_llm["api_key"],
+            temperature=cfg.llm.temperature,
+            timeout_seconds=cfg.llm.timeout_seconds,
+            trust_env=app_llm["trust_env"],
+        )
+    elif cfg.llm.provider == "mock":
         llm = MockLLMProvider([
             "**结论**：离线 Mock 闭环已运行。\n",
             "**要点**：\n- 使用 **异步队列** 解耦\n- 通过 **RRF** 融合检索\n",
@@ -107,10 +252,12 @@ def build_default_service(config_path: str | Path | None = None) -> RealtimeAnsw
             timeout_seconds=cfg.llm.timeout_seconds,
         )
     transcript_corrector = None
-    endpoint_host = urlparse(cfg.llm.base_url).hostname
+    llm_base_url = app_llm["base_url"] if app_llm else cfg.llm.base_url
+    llm_provider = app_llm["provider"] if app_llm else cfg.llm.provider
+    endpoint_host = urlparse(llm_base_url).hostname
     if (
         cfg.postprocess.llm_correction.enabled
-        and cfg.llm.provider in {"ollama", "local"}
+        and llm_provider in {"ollama", "local"}
         and endpoint_host in {"localhost", "127.0.0.1", "::1"}
     ):
         transcript_corrector = LocalLLMTranscriptCorrector(
@@ -118,11 +265,11 @@ def build_default_service(config_path: str | Path | None = None) -> RealtimeAnsw
             hotwords,
             confidence_threshold=cfg.postprocess.llm_correction.confidence_threshold,
         )
-    return RealtimeAnswerService(
+    service = RealtimeAnswerService(
         retriever,
         llm,
         PROJECT_ROOT / "prompts" / "answer_system.md",
-        top_k=cfg.rag.top_k,
+        top_k=6 if notes_chunks else cfg.rag.top_k,
         min_score=cfg.rag.min_score,
         token_budget=cfg.rag.token_budget,
         transcript_corrector=transcript_corrector,
@@ -130,6 +277,17 @@ def build_default_service(config_path: str | Path | None = None) -> RealtimeAnsw
         hotwords=hotwords,
         generic_product_skip_score=cfg.rag.generic_product_skip_score,
     )
+    service.app_llm = app_llm or {
+        "provider": cfg.llm.provider,
+        "base_url": cfg.llm.base_url,
+        "model": cfg.llm.model,
+        "cloud_text": cfg.llm.provider not in {"mock", "ollama", "local"},
+    }
+    service.notes_chunks = len(notes_chunks or [])
+    service.extra_hotwords = tuple(termbank.hotwords) if termbank else ()
+    service.asr_terms = termbank.decoder_count if termbank else 0
+    service.termbank_unique = termbank.unique_terms if termbank else 0
+    return service
 
 
 def create_app(
@@ -139,10 +297,13 @@ def create_app(
     *,
     mock: bool = False,
     mock_settings: MockSettings | None = None,
+    use_app_config: bool = True,
+    history_store: RealtimeHistoryStore | None = None,
 ) -> FastAPI:
     app = FastAPI(title="面试猴实时语音问答核心", version="2.0.0")
     cfg = load_config(PROJECT_ROOT / "config" / "config.yaml")
     app.state.mock_mode = mock
+    app.state.history_store = history_store
     if mock:
         fixtures = load_fixtures(PROJECT_ROOT)
         settings = mock_settings or MockSettings.from_env()
@@ -153,13 +314,18 @@ def create_app(
             fixtures, settings, PROJECT_ROOT / "logs" / "mock_protocol.jsonl",
         )
     else:
-        app.state.answer_service = service or build_default_service()
+        app.state.answer_service = service or build_default_service(
+            use_app_config=use_app_config,
+        )
         app.state.qa_logger = QALogWriter(record_audio=cfg.observability.record_audio_for_replay)
+        app.state.history_store = history_store or RealtimeHistoryStore()
         app.state.capture_runtime = runtime or CaptureRuntime(
             cfg,
             app.state.answer_service,
             PROJECT_ROOT,
             qa_logger=app.state.qa_logger,
+            transcript_logger=app.state.history_store,
+            extra_hotwords=getattr(app.state.answer_service, "extra_hotwords", ()),
         )
     configured_glossary = Path(glossary_path or cfg.asr.hotwords_path)
     if not configured_glossary.is_absolute():
@@ -173,13 +339,56 @@ def create_app(
 
     @app.get("/api/status")
     async def status():
+        llm_meta = getattr(app.state.answer_service, "app_llm", {}) or {}
+        notes_count = int(getattr(app.state.answer_service, "notes_chunks", 0) or 0)
         return {
             "ok": True,
             "transport": "sse",
             "local_default": cfg.privacy.local_mode,
+            "llm_provider": llm_meta.get("provider", cfg.llm.provider),
+            "llm_model": llm_meta.get("model", cfg.llm.model),
+            "cloud_text": bool(llm_meta.get("cloud_text", False)),
+            "notes_mode": notes_count > 0,
+            "notes_chunks": notes_count,
+            "asr_terms": int(getattr(app.state.answer_service, "asr_terms", 0) or 0),
             "latency_histograms": LATENCY_METRICS.snapshot(),
             **app.state.capture_runtime.status(),
         }
+
+    @app.get("/api/sessions")
+    async def sessions(limit: int = 50):
+        store = app.state.history_store
+        if store is None:
+            return {"items": []}
+        return {"items": await asyncio.to_thread(store.list_sessions, limit)}
+
+    @app.get("/api/sessions/{session_id}")
+    async def session_detail(session_id: str):
+        store = app.state.history_store
+        if store is None:
+            raise HTTPException(404, "当前模式未启用本机会话历史")
+        if not valid_session_id(session_id):
+            raise HTTPException(400, "session_id 格式不合法")
+        detail = await asyncio.to_thread(store.get_session, session_id)
+        if detail is None:
+            raise HTTPException(404, "会话不存在")
+        return detail
+
+    @app.delete("/api/sessions/{session_id}")
+    async def session_delete(session_id: str):
+        store = app.state.history_store
+        if store is None:
+            raise HTTPException(404, "当前模式未启用本机会话历史")
+        try:
+            removed = await asyncio.to_thread(store.delete_session, session_id)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return {"ok": True, "removed": removed}
+
+    @app.post("/api/answer/cancel")
+    async def answer_cancel(body: ContextRequest):
+        await app.state.answer_service.cancel(body.session_id)
+        return {"ok": True}
 
     @app.post("/api/capture/start")
     async def capture_start(body: CaptureRequest):
@@ -333,7 +542,9 @@ def create_app(
                         status = "interrupted"
                         await app.state.answer_service.cancel(body.session_id)
                         return
-                    yield _sse(event.event, dict(event.data))
+                    payload = dict(event.data)
+                    payload.setdefault("trace_id", event.trace_id)
+                    yield _sse(event.event, payload)
             except Exception as exc:
                 status = "error"
                 error = str(exc)
@@ -344,10 +555,14 @@ def create_app(
                         "trace_id": metadata.get("trace_id"),
                         "session_id": body.session_id,
                         "source": "text",
+                        "utterance_id": None,
+                        "question_start_ms": None,
+                        "question_end_ms": None,
                         "raw_text": body.question,
                         "corrected_text": body.question,
                         "corrections": [],
                         "asr_engine": None,
+                        "pass1_text": None,
                         "pass1_ms": None,
                         "pass2_ms": None,
                         "retrieval_top_k": metadata.get("sources", []),

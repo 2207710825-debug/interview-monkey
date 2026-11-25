@@ -1,4 +1,4 @@
-"""验证旧三栏前端所用的 /api/events SSE 与 --mock fixture 对齐。"""
+"""验证实时问答前端所用的 /api/events SSE 与 --mock fixture 对齐。"""
 from __future__ import annotations
 
 import argparse

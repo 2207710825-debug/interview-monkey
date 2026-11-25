@@ -3,94 +3,2003 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>面试猴 · 实时知识辅助</title>
+  <title>面试猴 · 实时问答</title>
   <style>
-    :root{color-scheme:dark;--bg:#0b0f17;--panel:#121927;--line:#263149;--text:#edf3ff;--muted:#8fa1bd;--accent:#61dafb;--green:#45d483;--warn:#ffbd5b;--danger:#ff6b7a}
-    *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% 0,#18233a 0,var(--bg) 35%);color:var(--text);font:14px/1.55 Inter,"Segoe UI","Microsoft YaHei",sans-serif}
-    header{position:sticky;top:0;z-index:2;padding:14px 20px;background:rgba(11,15,23,.92);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
-    .bar,.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.bar{justify-content:space-between}.brand{font-size:18px;font-weight:750}.status{display:flex;gap:14px;color:var(--muted)}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--muted)}.on{background:var(--green)}.error{background:var(--danger)}
-    .controls{margin-top:12px}button,select,input{border:1px solid var(--line);background:#172033;color:var(--text);border-radius:9px;padding:8px 11px}button{cursor:pointer}button.primary{background:var(--accent);border-color:var(--accent);color:#06101a;font-weight:700}button:disabled{opacity:.45;cursor:not-allowed}
-    main{display:grid;grid-template-columns:1.05fr .8fr 1.35fr;gap:12px;padding:14px;min-height:calc(100vh - 125px)}.panel{display:flex;min-width:0;flex-direction:column;background:rgba(18,25,39,.94);border:1px solid var(--line);border-radius:14px;overflow:hidden}.panel h2{margin:0;padding:13px 15px;border-bottom:1px solid var(--line);font-size:14px}.content{padding:14px;overflow:auto;flex:1}.partial{color:var(--muted);font-style:italic}.final{padding:7px 0;border-bottom:1px solid rgba(38,49,73,.55)}.speaker{color:var(--accent);font-size:12px;margin-right:8px}.corrected{display:inline-block;margin-left:7px;padding:0 5px;border:1px solid var(--green);border-radius:99px;color:var(--green);font-size:10px}.question{font-size:18px;line-height:1.55}.answer{font-size:15px;white-space:normal}.answer strong{color:#73e5ff;background:rgba(97,218,251,.09);padding:0 2px;border-radius:3px}.source{display:inline-block;margin:4px 4px 0 0;padding:2px 7px;color:var(--muted);border:1px solid var(--line);border-radius:99px;font-size:11px}.empty{color:var(--muted)}
-    .ask,.question-actions{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}.ask input{flex:1;min-width:0}.question-actions{align-items:center}.question-actions .hint{margin-right:auto;color:var(--muted);font-size:11px}.question[contenteditable="true"]{outline:2px solid var(--accent);outline-offset:-2px;background:#172033}.privacy{display:none;padding:8px 12px;border:1px solid var(--warn);color:var(--warn);border-radius:8px}.metrics b{color:var(--text)}
-    @media(max-width:950px){main{grid-template-columns:1fr}.panel{min-height:280px}}
+    :root{
+      color-scheme:dark;
+      --bg:#0b0f17;--panel:#101725;--panel-2:#121b2b;--line:#263149;--line-soft:rgba(38,49,73,.58);
+      --text:#edf3ff;--muted:#8fa1bd;--muted-2:#6f819d;--accent:#61dafb;--accent-soft:rgba(97,218,251,.12);--glass-alpha:.698;
+      --green:#45d483;--warn:#ffbd5b;--danger:#ff6b7a;--q:#7dd3fc;--a:#c4b5fd;
+    }
+    *{box-sizing:border-box}
+    html{height:100%;background:transparent}
+    body{height:100%}
+    body{
+      margin:0;display:flex;flex-direction:column;overflow:hidden;
+      background:transparent;
+      color:var(--text);font:14px/1.55 Inter,"Segoe UI","Microsoft YaHei",sans-serif;
+    }
+    button,select,textarea,input{font:inherit}
+    button,select{border:1px solid var(--line);background:rgba(23,32,51,var(--glass-alpha));color:var(--text);border-radius:9px;padding:8px 11px}
+    select{max-width:230px}
+    button{cursor:pointer;transition:background .15s,border-color .15s,opacity .15s}
+    button:hover{border-color:#3d4b69;background:rgba(27,39,64,var(--glass-alpha))}
+    button.primary{background:rgba(97,218,251,var(--glass-alpha));border-color:var(--accent);color:#06101a;font-weight:750}
+    button.primary:hover{background:rgba(126,230,255,var(--glass-alpha));border-color:#7ee6ff}
+    button.ghost{background:transparent}
+    button.small{padding:5px 9px;font-size:12px;border-radius:7px}
+    button.danger{color:var(--danger);border-color:rgba(255,107,122,.45)}
+    button.icon{padding:5px 8px;background:transparent;border-color:transparent;color:var(--muted);font-size:16px}
+    button:disabled{opacity:.42;cursor:not-allowed}
+    .hidden{display:none!important}
+    .muted{color:var(--muted)}
+    .err{color:var(--danger)}
+    .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--muted)}
+    .dot.on{background:var(--green);box-shadow:0 0 8px rgba(69,212,131,.55)}
+    .dot.error{background:var(--danger)}
+    header{
+      flex:0 0 auto;position:relative;z-index:10;padding:12px 18px 10px;
+      background:rgba(11,15,23,var(--glass-alpha));border-bottom:1px solid var(--line);backdrop-filter:blur(12px);
+    }
+    .bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between}
+    .brand{font-size:18px;font-weight:800;letter-spacing:.2px;white-space:nowrap}
+    .status{display:flex;align-items:center;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12.5px}
+    .status b{color:var(--text);font-weight:650}
+    .bar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .mode-switch{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:rgba(17,26,42,var(--glass-alpha))}
+    .mode-switch button{border:0;border-radius:0;background:transparent;color:var(--muted);padding:7px 11px;font-size:12.5px}
+    .mode-switch button.active{background:rgba(97,218,251,calc(.12 * var(--glass-alpha)));color:var(--accent);font-weight:700}
+    .controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .mode-badge{display:inline-flex;align-items:center;gap:4px;padding:7px 10px;border:1px solid rgba(97,218,251,.35);border-radius:9px;color:var(--accent);font-size:12px;background:rgba(97,218,251,calc(.06 * var(--glass-alpha)));white-space:nowrap}
+    .metrics{color:var(--muted);white-space:nowrap}
+    .metrics b{color:var(--text)}
+    main{flex:1 1 auto;min-height:0;display:flex;position:relative;overflow:hidden}
+    .chat-panel{flex:1 1 auto;min-width:0;min-height:0;display:flex;flex-direction:column;position:relative}
+    .view-banner{
+      flex:0 0 auto;display:flex;align-items:center;gap:10px;justify-content:space-between;
+      padding:8px 18px;background:rgba(255,189,91,calc(.09 * var(--glass-alpha)));border-bottom:1px solid rgba(255,189,91,.28);
+      color:var(--warn);font-size:12.5px;
+    }
+    .view-banner button{color:var(--warn);border-color:rgba(255,189,91,.45)}
+    .timeline{
+      flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+      padding:22px clamp(16px,4.5vw,72px) 26px;
+    }
+    .turn{max-width:980px;margin:0 auto 16px;border:1px solid var(--line);border-radius:15px;background:rgba(18,27,43,var(--glass-alpha));overflow:hidden;scroll-margin:20px}
+    .turn.selected{border-color:rgba(97,218,251,.52);box-shadow:0 0 0 1px rgba(97,218,251,.16)}
+    .turn.streaming{border-color:rgba(97,218,251,.3)}
+    .q-row{display:flex;gap:11px;padding:14px 16px 10px;background:transparent}
+    .q-mark,.a-mark{flex:0 0 26px;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;margin-top:1px}
+    .q-mark{background:rgba(125,211,252,calc(.14 * var(--glass-alpha)));color:var(--q);border:1px solid rgba(125,211,252,.28)}
+    .a-mark{background:rgba(196,181,253,calc(.12 * var(--glass-alpha)));color:var(--a);border:1px solid rgba(196,181,253,.26)}
+    .q-main,.a-main{min-width:0;flex:1}
+    .q-text{font-size:16px;line-height:1.5;font-weight:650;white-space:pre-wrap;word-break:break-word}
+    .q-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;color:var(--muted-2);font-size:11px}
+    .kind-badge{padding:1px 6px;border:1px solid var(--line);border-radius:99px;color:var(--muted)}
+    .kind-badge.auto{color:var(--accent);border-color:rgba(97,218,251,.28)}
+    .kind-badge.manual{color:var(--a);border-color:rgba(196,181,253,.28)}
+    .status-badge{padding:1px 6px;border-radius:99px;font-size:10px;border:1px solid transparent;background:rgba(143,161,189,calc(.12 * var(--glass-alpha)));color:var(--muted)}
+    .status-badge.streaming,.status-badge.pending{color:var(--warn);background:rgba(255,189,91,calc(.1 * var(--glass-alpha)))}
+    .status-badge.done{color:var(--green);background:rgba(69,212,131,calc(.1 * var(--glass-alpha)))}
+    .status-badge.interrupted{color:var(--warn);background:rgba(255,189,91,calc(.08 * var(--glass-alpha)))}
+    .status-badge.error{color:var(--danger);background:rgba(255,107,122,calc(.1 * var(--glass-alpha)))}
+    .a-row{display:flex;gap:11px;padding:0 16px 13px}
+    .a-body{font-size:14.5px;line-height:1.75;color:#dce6f8;word-break:break-word;min-height:24px}
+    .a-body .md-h{margin:9px 0 4px;color:#a9e9ff;font-weight:750;font-size:14px}
+    .a-body .md-li{margin:2px 0 2px 2px}
+    .a-body .md-gap{height:6px}
+    .a-body strong{color:#8fe8ff;background:rgba(97,218,251,calc(.08 * var(--glass-alpha)));padding:0 2px;border-radius:3px}
+    .a-body code{padding:1px 4px;border-radius:4px;background:rgba(143,161,189,calc(.14 * var(--glass-alpha)));color:#f5d7a1;font-size:12.5px}
+    .a-body pre{margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:9px;background:rgba(10,16,27,var(--glass-alpha));overflow:auto;font-size:12.5px}
+    .a-body pre code{background:none;color:#d8e4f7;padding:0}
+    .streaming .a-body::after{content:"▌";color:var(--accent);animation:blink 1s steps(1) infinite;margin-left:2px}
+    @keyframes blink{50%{opacity:0}}
+    .a-foot{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:1px solid var(--line-soft)}
+    .foot-btn{border:1px solid var(--line);background:transparent;color:var(--muted);padding:3px 8px;border-radius:7px;font-size:11px}
+    .foot-btn:hover{color:var(--text);background:rgba(23,32,51,var(--glass-alpha))}
+    .a-metrics{margin-left:auto;color:var(--muted-2);font-size:11px;white-space:nowrap}
+    .empty-state{max-width:720px;margin:8vh auto 0;text-align:center;color:var(--muted)}
+    .empty-icon{font-size:34px;color:#38506f;line-height:1;margin-bottom:12px}
+    .empty-title{font-size:17px;color:#c7d4e8;font-weight:650;margin-bottom:7px}
+    .empty-sub{font-size:12.5px;line-height:1.7;color:var(--muted-2)}
+    .back-latest{
+      position:absolute;right:30px;bottom:88px;z-index:6;
+      border:1px solid rgba(97,218,251,.4);background:rgba(15,26,43,calc(.95 * var(--glass-alpha)));color:var(--accent);
+      border-radius:99px;padding:7px 13px;font-size:12px;box-shadow:0 8px 22px rgba(0,0,0,.4)
+    }
+    .back-latest:hover{background:rgba(25,42,66,calc(.98 * var(--glass-alpha)))}
+    .composer{
+      flex:0 0 auto;display:flex;align-items:flex-end;gap:8px;padding:12px clamp(16px,4.5vw,72px) 14px;
+      border-top:1px solid var(--line);background:rgba(11,15,23,var(--glass-alpha));
+    }
+    .composer textarea{
+      flex:1;min-height:42px;max-height:150px;resize:none;padding:10px 12px;line-height:1.5;
+      border:1px solid var(--line);border-radius:11px;background:rgba(17,26,41,var(--glass-alpha));color:var(--text);outline:none;
+    }
+    .composer textarea:focus{border-color:rgba(97,218,251,.55)}
+    .composer button{height:42px}
+    .context-sidebar{
+      flex:0 0 50%;width:50%;min-width:0;min-height:0;display:flex;flex-direction:column;
+      border-left:1px solid var(--line);background:rgba(12,19,31,var(--glass-alpha));
+    }
+    #workspace:not(.context-mode) .context-sidebar{display:none}
+    #workspace.context-mode .timeline{padding-left:18px;padding-right:18px}
+    #workspace.context-mode .composer{padding-left:18px;padding-right:18px}
+    .sidebar-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+    .tabs{display:flex;gap:3px;flex-wrap:wrap}
+    .tabs button{border:0;background:transparent;color:var(--muted);padding:6px 8px;border-radius:7px;font-size:12px}
+    .tabs button.active{background:rgba(97,218,251,calc(.12 * var(--glass-alpha)));color:var(--accent);font-weight:700}
+    .sidebar-body{flex:1;min-height:0;overflow:hidden;position:relative}
+    .tab-panel{display:none;height:100%;min-height:0;flex-direction:column;overflow-y:auto;padding:12px}
+    .tab-panel.active{display:flex}
+    .panel-hint{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted-2);font-size:11.5px;margin-bottom:9px;line-height:1.5}
+    .transcript-list{display:flex;flex-direction:column;gap:7px;padding-bottom:20px}
+    .tr-row{padding:8px 9px;border:1px solid var(--line-soft);border-radius:9px;background:rgba(18,27,43,var(--glass-alpha));font-size:13px;line-height:1.55}
+    .tr-row.partial{color:var(--muted);font-style:italic;border-style:dashed}
+    .tr-row.highlight{border-color:var(--accent);background:rgba(97,218,251,calc(.09 * var(--glass-alpha)));box-shadow:0 0 0 1px rgba(97,218,251,.2)}
+    .tr-top{display:flex;align-items:center;gap:7px;margin-bottom:3px;color:var(--muted-2);font-size:10.5px}
+    .tr-speaker{color:var(--accent);font-weight:650}
+    .tr-speaker.me{color:var(--a)}
+    .corrected{padding:0 5px;border:1px solid var(--green);border-radius:99px;color:var(--green);font-size:9.5px}
+    .empty-mini{padding:16px 10px;color:var(--muted-2);font-size:12px;line-height:1.7;text-align:center}
+    .sources-list{display:flex;flex-direction:column;gap:9px;padding-bottom:20px}
+    .source-card{padding:10px;border:1px solid var(--line-soft);border-radius:10px;background:rgba(18,27,43,var(--glass-alpha))}
+    .source-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+    .source-head b{color:var(--accent);font-weight:650}
+    .source-score{margin-left:auto;color:var(--green);font-size:10.5px}
+    .source-path{margin-top:3px;color:var(--muted-2);font-size:10.5px;word-break:break-all}
+    .source-text{margin-top:7px;color:#cbd8ea;font-size:12.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+    .corrections-body{display:flex;flex-direction:column;gap:10px;padding-bottom:20px}
+    .correction-block{padding:9px 10px;border:1px solid var(--line-soft);border-radius:9px;background:rgba(18,27,43,var(--glass-alpha))}
+    .correction-label{color:var(--muted-2);font-size:10.5px;margin-bottom:3px}
+    .correction-value{font-size:12.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+    .correction-values{display:flex;flex-direction:column;gap:5px}
+    .change-line{font-size:12px;line-height:1.6;color:#cbd8ea}
+    .change-line .arrow{color:var(--warn);margin:0 4px}
+    .change-line .why{color:var(--muted-2);font-size:10.5px;margin-left:6px}
+    .editor textarea{width:100%;min-height:76px;resize:vertical;padding:8px;border:1px solid var(--line);border-radius:8px;background:rgba(13,22,36,var(--glass-alpha));color:var(--text);outline:none}
+    .editor-actions{display:flex;gap:6px;margin-top:7px}
+    .session-actions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+    .session-list{display:flex;flex-direction:column;gap:7px;padding-bottom:20px}
+    .session-item{padding:9px 10px;border:1px solid var(--line-soft);border-radius:9px;background:rgba(18,27,43,var(--glass-alpha));cursor:pointer;transition:border-color .15s,background .15s}
+    .session-item:hover{border-color:#3d4b69;background:rgba(25,38,58,calc(.8 * var(--glass-alpha)))}
+    .session-item.current{border-color:rgba(69,212,131,.35)}
+    .session-item.viewing{border-color:rgba(97,218,251,.5);background:rgba(97,218,251,calc(.06 * var(--glass-alpha)))}
+    .session-title{font-size:12.5px;color:#dbe6f7;line-height:1.45;word-break:break-word}
+    .session-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;color:var(--muted-2);font-size:10.5px}
+    .session-badge{padding:0 5px;border-radius:99px;border:1px solid var(--line);font-size:9.5px}
+    .session-badge.live{color:var(--green);border-color:rgba(69,212,131,.3)}
+    .toast{
+      position:fixed;left:50%;bottom:82px;transform:translateX(-50%);z-index:50;
+      max-width:min(86vw,560px);padding:9px 14px;border-radius:10px;font-size:12.5px;
+      background:rgba(17,26,41,calc(.97 * var(--glass-alpha)));border:1px solid var(--line);color:var(--text);
+      box-shadow:0 12px 34px rgba(0,0,0,.45)
+    }
+    .toast.error{border-color:rgba(255,107,122,.5);color:#ffd4d8}
+    .toast.ok{border-color:rgba(69,212,131,.45);color:#d2ffe4}
+    .sidebar-backdrop{display:none}
+    @media(max-width:1000px){
+      .context-sidebar{
+        position:absolute;top:0;right:0;bottom:0;z-index:30;width:min(94vw,560px);
+        transform:translateX(105%);transition:transform .18s ease;box-shadow:-18px 0 40px rgba(0,0,0,.45)
+      }
+      #workspace.context-mode .context-sidebar{transform:translateX(0)}
+      #workspace.context-mode .sidebar-backdrop{display:block;position:absolute;inset:0;z-index:20;background:rgba(0,0,0,calc(.45 * var(--glass-alpha)))}
+      .timeline{padding-left:14px;padding-right:14px}
+      .composer{padding-left:14px;padding-right:14px}
+    }
+    @media(max-width:720px){
+      header{padding:10px 12px 8px}
+      .status{gap:9px;font-size:11.5px}
+      .bar-actions{width:100%}
+      .mode-badge{display:none}
+      .q-text{font-size:15px}
+      .a-body{font-size:14px}
+      .back-latest{bottom:80px;right:14px}
+    }
   </style>
 </head>
 <body>
 <header>
   <div class="bar">
-    <div class="brand">面试猴 · 实时专业知识辅助</div>
+    <div class="brand">面试猴 · 实时问答</div>
     <div class="status">
       <span><i id="captureDot" class="dot"></i>采集：<b id="captureState">停止</b></span>
       <span><i id="asrDot" class="dot"></i>ASR：<b id="asrState">空闲</b></span>
+      <span>笔记：<b id="notesState">--</b></span>
+      <span>术语：<b id="termsState">--</b></span>
+      <span>模型：<b id="llmState">--</b></span>
       <span class="metrics">TTFT <b id="ttft">--</b> ms · 端到端 <b id="e2e">--</b> ms</span>
+    </div>
+    <div class="bar-actions">
+      <div class="mode-switch" role="group" aria-label="视图模式">
+        <button id="modeChat" type="button" class="active">问答模式</button>
+        <button id="modeContext" type="button">上下文模式</button>
+      </div>
+      <select id="sessionSelect" title="切换会话"></select>
+      <button id="newSession" type="button" class="ghost">＋ 新会话</button>
     </div>
   </div>
   <div class="controls">
-    <select id="source"><option value="loopback">系统声音（提问方）</option><option value="mic">麦克风（仅上下文）</option><option value="mic_question">麦克风（提问方）</option><option value="both">系统声音 + 麦克风</option></select>
-    <button id="start" class="primary">开始采集</button><button id="pause" disabled>暂停</button><button id="stop" disabled>停止</button>
-    <button id="clear">清空上下文</button><select id="knowledge"><option value="engine/knowledge">全部知识库</option></select>
-    <label><input id="localMode" type="checkbox" checked> 仅本地模式</label>
-    <span id="privacy" class="privacy">启用第三方服务前，必须确认音频/文本会被发送到外部。</span>
+    <select id="source" title="采集音源">
+      <option value="loopback">系统声音（提问方）</option>
+      <option value="mic">麦克风（仅上下文）</option>
+      <option value="mic_question">麦克风（提问方）</option>
+      <option value="both">系统声音 + 麦克风</option>
+    </select>
+    <button id="start" type="button" class="primary">开始采集</button>
+    <button id="pause" type="button" disabled>暂停</button>
+    <button id="stop" type="button" disabled>停止</button>
+    <button id="clear" type="button" class="ghost">清空上下文</button>
+    <select id="knowledge" title="知识库"><option value="engine/knowledge">全部知识库</option></select>
+    <span id="modeBadge" class="mode-badge" title="">模型：<b id="llmState2">--</b></span>
   </div>
 </header>
-<main>
-  <section class="panel"><h2>① 实时转写</h2><div id="transcripts" class="content"><div class="empty">开始采集后，partial 会以灰色斜体显示。</div></div></section>
-  <section class="panel"><h2>② 当前问题</h2><div id="question" class="content question"><span class="empty">等待提问方问题…</span></div><div id="sources" class="content" style="flex:0 0 auto"></div><div class="question-actions"><span id="correctionHint" class="hint">发现错词可人工修改</span><button id="editQuestion">修改转写</button><button id="saveQuestion" hidden>保存并重新回答</button><button id="cancelQuestion" hidden>取消</button></div></section>
-  <section class="panel"><h2>③ 流式回答</h2><div id="answer" class="content answer"><span class="empty">回答将在这里流式出现。</span></div><div class="ask"><input id="manual" placeholder="也可以输入问题验证闭环"><button id="send">发送</button></div></section>
+
+<main id="workspace" class="context-mode">
+  <section class="chat-panel">
+    <div id="viewBanner" class="view-banner hidden">
+      <span id="viewBannerText">正在查看历史会话</span>
+      <button id="returnLive" type="button" class="small">返回实时</button>
+    </div>
+    <div id="timeline" class="timeline" role="log" aria-live="polite"></div>
+    <button id="backLatest" type="button" class="back-latest hidden">↓ 回到最新</button>
+    <div class="composer">
+      <textarea id="manual" rows="1" placeholder="继续追问，或手动输入问题……"></textarea>
+      <button id="send" type="button" class="primary">发送</button>
+      <button id="cancelAnswer" type="button" class="danger ghost hidden">停止回答</button>
+    </div>
+  </section>
+
+  <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+  <aside id="contextSidebar" class="context-sidebar" aria-label="上下文">
+    <div class="sidebar-head">
+      <div class="tabs" role="tablist">
+        <button type="button" data-tab="transcript" class="active">转写</button>
+        <button type="button" data-tab="sources">来源</button>
+        <button type="button" data-tab="corrections">纠错</button>
+        <button type="button" data-tab="sessions">会话</button>
+      </div>
+      <button id="closeContext" type="button" class="icon" title="收起上下文">✕</button>
+    </div>
+    <div class="sidebar-body">
+      <section id="tab-transcript" class="tab-panel active">
+        <div class="panel-hint">
+          <span id="transcriptHint">实时转写 · 系统声音 / 麦克风</span>
+          <button id="transcriptFollow" type="button" class="small hidden">↓ 回到最新</button>
+        </div>
+        <div id="transcriptList" class="transcript-list"></div>
+      </section>
+      <section id="tab-sources" class="tab-panel">
+        <div class="panel-hint" id="sourcesFor">选择一条问答查看知识来源</div>
+        <div id="sourcesList" class="sources-list"></div>
+      </section>
+      <section id="tab-corrections" class="tab-panel">
+        <div class="panel-hint" id="correctionsFor">选择一条问答查看 ASR 原文和纠错</div>
+        <div id="correctionsBody" class="corrections-body"></div>
+      </section>
+      <section id="tab-sessions" class="tab-panel">
+        <div class="panel-hint">本机会话历史 · 不上传</div>
+        <div class="session-actions">
+          <button id="newSession2" type="button" class="small">＋ 新会话</button>
+          <button id="deleteSession" type="button" class="small danger hidden">删除此会话</button>
+        </div>
+        <div id="sessionList" class="session-list"></div>
+      </section>
+    </div>
+  </aside>
 </main>
+
+<div id="toast" class="toast hidden" role="status"></div>
+
 <script>
-const $=s=>document.querySelector(s), sessionId=crypto.randomUUID();
-let capturing=false, paused=false, answerBuffer='', pendingTokens='', renderQueued=false, requestStarted=0, firstTokenArrived=0, firstRendered=false, activeTrace='', autoScroll=true, currentQuestionRaw='', questionBeforeEdit='', lastFinalTranscript=null;
-const partialEls=new Map();
-const answerBox=$('#answer');
-answerBox.addEventListener('scroll',()=>{autoScroll=answerBox.scrollHeight-answerBox.scrollTop-answerBox.clientHeight<40});
-function setStatus(s){
-  const cap=s.capture||'stopped', asr=s.asr||'idle'; $('#captureState').textContent=cap; $('#asrState').textContent=asr;
-  $('#captureDot').className='dot '+(cap==='capturing'?'on':cap==='error'?'error':''); $('#asrDot').className='dot '+(asr==='connected'?'on':'');
-}
-function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
-function safeMarkdown(md){
-  let text=escapeHtml(md), opens=(text.match(/\*\*/g)||[]).length; if(opens%2) text=text.replace(/\*\*([^*]*)$/,'@@OPEN@@$1');
-  text=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/@@OPEN@@/g,'**').replace(/\n/g,'<br>'); return text;
-}
-function scheduleRender(){if(renderQueued)return;renderQueued=true;requestAnimationFrame(()=>{renderQueued=false;answerBuffer+=pendingTokens;pendingTokens='';answerBox.innerHTML=safeMarkdown(answerBuffer);if(!firstRendered&&firstTokenArrived){firstRendered=true;const renderMs=performance.now()-firstTokenArrived,e2e=performance.now()-requestStarted;$('#e2e').textContent=Math.round(e2e);console.info(JSON.stringify({event:'frontend_latency',trace_id:activeTrace,render_ms:+renderMs.toFixed(3),end_to_end_ms:+e2e.toFixed(3)}))}if(autoScroll)answerBox.scrollTop=answerBox.scrollHeight})}
-function transcript(t){
-  if($('#transcripts .empty'))$('#transcripts').innerHTML='';
-  const key=t.utterance_id||`legacy:${t.channel||'unknown'}`;
-  if(t.kind==='partial'){
-    let partialEl=partialEls.get(key);
-    if(!partialEl){partialEl=document.createElement('div');partialEl.className='partial';partialEl.dataset.utteranceId=key;partialEls.set(key,partialEl);$('#transcripts').append(partialEl)}
-    partialEl.textContent=t.text;
-  }else{
-    const partialEl=partialEls.get(key);if(partialEl){partialEl.remove();partialEls.delete(key)}
-    lastFinalTranscript=t;const row=document.createElement('div');row.className='final';row.dataset.utteranceId=key;const details=[];if(t.raw_text)details.push(`原始：${t.raw_text}`);if(t.pass1_text)details.push(`第一遍：${t.pass1_text}`);if(t.corrections?.length)details.push(`改动：${t.corrections.map(c=>`${c.raw}→${c.corrected}（${c.reason}，${c.score}）`).join('；')}`);if(details.length)row.title=details.join('\n');row.innerHTML=`<span class="speaker">${escapeHtml(t.speaker_id||t.channel)}</span>${escapeHtml(t.text)}${t.corrected?'<span class="corrected">已校正</span>':''}`;$('#transcripts').append(row)
+(() => {
+  "use strict";
+
+  window.addEventListener("message", (event) => {
+    if (event.source !== window.parent || !event.data || event.data.type !== "interviewmonkey-glass-alpha") return;
+    const value = Math.min(230, Math.max(60, Number.parseInt(event.data.value, 10) || 178));
+    document.documentElement.style.setProperty("--glass-alpha", (value / 255).toFixed(3));
+  });
+
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const STORAGE = {
+    session: "mh_rt_session_id",
+    mode: "mh_rt_view_mode",
+    tab: "mh_rt_context_tab",
+  };
+  const STATUS_TEXT = {
+    pending: "等待回答",
+    streaming: "生成中",
+    done: "完成",
+    interrupted: "已中断",
+    error: "失败",
+    skip: "已跳过",
+  };
+
+  const state = {
+    sessionId: "",
+    viewingSessionId: null,
+    isLive: true,
+    capturing: false,
+    paused: false,
+    mode: localStorage.getItem(STORAGE.mode) || "context",
+    tab: localStorage.getItem(STORAGE.tab) || "transcript",
+    turns: [],
+    byId: new Map(),
+    byTrace: new Map(),
+    pendingAuto: null,
+    activeTurnId: null,
+    selectedTurnId: null,
+    transcript: [],
+    partials: new Map(),
+    partialEls: new Map(),
+    lastFinal: null,
+    atBottom: true,
+    followTranscript: true,
+    historySessions: [],
+    answerAbort: null,
+    turnSeq: 0,
+    newWhileAway: false,
+    liveNotice: false,
+    status: null,
+    statusRefreshTried: false,
+    refreshTimer: 0,
+    toastTimer: 0,
+  };
+
+  // ---------- 基础工具 ----------
+  function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>]/g, (ch) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    }[ch]));
   }
-  $('#transcripts').scrollTop=$('#transcripts').scrollHeight;
-}
-function questionDecision(q){if(q.is_question){currentQuestionRaw=q.normalized_query;$('#question').textContent=q.normalized_query;const t=lastFinalTranscript;const details=[];if(t?.raw_text)details.push(`原始：${t.raw_text}`);if(t?.corrections?.length)details.push(`改动：${t.corrections.map(c=>`${c.raw}→${c.corrected}（${c.reason}，${c.score}）`).join('；')}`);$('#question').title=details.join('\n');requestStarted=performance.now()}}
-function handleAnswer(e){
-  const kind=e.event||e.type;
-  if(kind==='meta'){const meta=e.data||e;if(meta.question){currentQuestionRaw=meta.question;$('#question').textContent=meta.question}if(meta.llm_correction?.changes?.length){const notes=meta.llm_correction.changes.map(c=>`${c.from}→${c.to}（${c.reason||'LLM纠错'}）`).join('；');$('#question').title=[$('#question').title,`LLM改动：${notes}`].filter(Boolean).join('\n')}answerBuffer='';pendingTokens='';firstTokenArrived=0;firstRendered=false;answerBox.innerHTML='';requestStarted=requestStarted||performance.now();activeTrace=e.trace_id||meta.trace_id||'';$('#sources').innerHTML=(meta.sources||e.sources||[]).map(s=>`<span class="source">${escapeHtml(s.chunk_id)} · ${escapeHtml(s.section||s.source)}</span>`).join('')}
-  if(kind==='token'){if(!answerBuffer&&!pendingTokens&&requestStarted){firstTokenArrived=performance.now();$('#ttft').textContent=Math.round(firstTokenArrived-requestStarted)}pendingTokens+=(e.data?.delta??e.delta??'');scheduleRender()}
-  if(kind==='done'){const m=e.data?.metrics||e.metrics||{};if(m.ttft_ms!=null)$('#ttft').textContent=Math.round(m.ttft_ms);if(m.end_to_end_ms!=null)$('#e2e').textContent=Math.round(m.end_to_end_ms)}
-  if(kind==='error'){answerBox.innerHTML=`<span style="color:var(--danger)">${escapeHtml(e.data?.message||e.message||'生成失败')}</span>`}
-}
-const events=new EventSource('/api/events');
-events.addEventListener('status',e=>setStatus(JSON.parse(e.data)));events.addEventListener('transcript',e=>transcript(JSON.parse(e.data)));events.addEventListener('question_decision',e=>questionDecision(JSON.parse(e.data)));events.addEventListener('answer',e=>handleAnswer(JSON.parse(e.data)));
-async function post(url,body={}){const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});return r.json()}
-$('#start').onclick=async()=>{const r=await post('/api/capture/start',{mode:$('#source').value,session_id:sessionId});setStatus(r);capturing=!!r.ok;$('#start').disabled=capturing;$('#pause').disabled=!capturing;$('#stop').disabled=!capturing};
-$('#stop').onclick=async()=>{setStatus(await post('/api/capture/stop'));capturing=false;paused=false;$('#start').disabled=false;$('#pause').disabled=true;$('#stop').disabled=true};
-$('#pause').onclick=async()=>{if(!paused){await $('#stop').onclick();paused=true;$('#pause').textContent='继续';$('#pause').disabled=false}else{paused=false;$('#pause').textContent='暂停';await $('#start').onclick()}};
-$('#clear').onclick=async()=>{await post('/api/context/clear',{session_id:sessionId});partialEls.clear();currentQuestionRaw='';lastFinalTranscript=null;$('#transcripts').innerHTML='<div class="empty">上下文已清空。</div>';$('#question').innerHTML='<span class="empty">等待提问方问题…</span>';$('#question').removeAttribute('title');answerBuffer='';answerBox.innerHTML='<span class="empty">回答将在这里流式出现。</span>'};
-$('#localMode').onchange=()=>{$('#privacy').style.display=$('#localMode').checked?'none':'inline-block'};
-$('#knowledge').onchange=async()=>{const r=await post('/api/knowledge/switch',{path:$('#knowledge').value});if(!r.ok)alert(r.detail||r.error||'知识库切换失败')};
-async function askQuestion(q){q=(q||'').trim();if(!q)return;currentQuestionRaw=q;$('#question').textContent=q;requestStarted=performance.now();answerBuffer='';pendingTokens='';answerBox.innerHTML='';const r=await fetch('/api/answer/stream',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,session_id:sessionId})});const reader=r.body.getReader(),decoder=new TextDecoder();let buffer='';while(true){const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});const blocks=buffer.split('\n\n');buffer=blocks.pop();for(const block of blocks){let event='message',data='{}';for(const line of block.split('\n')){if(line.startsWith('event:'))event=line.slice(6).trim();if(line.startsWith('data:'))data=line.slice(5).trim()}handleAnswer({event,data:JSON.parse(data)})}}}
-async function ask(){const q=$('#manual').value.trim();if(q)await askQuestion(q)}
-function finishQuestionEdit(){const box=$('#question');box.contentEditable='false';$('#editQuestion').hidden=false;$('#saveQuestion').hidden=true;$('#cancelQuestion').hidden=true}
-$('#editQuestion').onclick=()=>{const box=$('#question');questionBeforeEdit=(currentQuestionRaw||box.textContent).trim();if(!questionBeforeEdit)return;box.textContent=questionBeforeEdit;box.contentEditable='true';box.focus();$('#editQuestion').hidden=true;$('#saveQuestion').hidden=false;$('#cancelQuestion').hidden=false};
-$('#cancelQuestion').onclick=()=>{$('#question').textContent=questionBeforeEdit;finishQuestionEdit()};
-$('#saveQuestion').onclick=async()=>{const raw=questionBeforeEdit.trim(),corrected=$('#question').textContent.trim();if(!corrected){alert('修改后的问题不能为空');return}finishQuestionEdit();if(raw!==corrected){const saved=await post('/api/glossary/corrections',{raw,corrected});if(!saved.ok){alert(saved.detail||'纠错记录保存失败');return}const suggestion=saved.alias_suggestion;if(suggestion&&confirm(`是否将“${suggestion.alias}”加入“${suggestion.term}”的 aliases？`)){const updated=await post('/api/glossary/aliases',suggestion);if(!updated.ok)alert(updated.detail||'aliases 更新失败')}$('#correctionHint').textContent='已在本机记录本次纠错'}currentQuestionRaw=corrected;await askQuestion(corrected)};
-$('#send').onclick=ask;$('#manual').addEventListener('keydown',e=>{if(e.key==='Enter')ask()});fetch('/api/status').then(r=>r.json()).then(setStatus);fetch('/api/knowledge').then(r=>r.json()).then(r=>{if(r.items?.length){const select=$('#knowledge');select.innerHTML='';for(const item of r.items){const option=document.createElement('option');option.value=item.path;option.textContent=item.name;option.dataset.category=item.category||'';select.append(option)}}});
+  function escapeAttr(value) {
+    return escapeHtml(value).replace(/"/g, "&quot;");
+  }
+  function newId() {
+    try {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    } catch (e) { /* ignore */ }
+    return "s-" + Date.now().toString(36) + "-" + Math.random().toString(16).slice(2);
+  }
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function fmtDateTime(value) {
+    if (!value) return "";
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const now = new Date();
+    const sameDay = date.toDateString() === now.toDateString();
+    const time = pad(date.getHours()) + ":" + pad(date.getMinutes());
+    return sameDay ? time : (date.getMonth() + 1) + "/" + date.getDate() + " " + time;
+  }
+  function fmtStartMs(value) {
+    if (typeof value === "number" && value > 0) {
+      const date = new Date(value);
+      if (!Number.isNaN(date.getTime())) return fmtDateTime(date);
+    }
+    return fmtDateTime(value);
+  }
+  function truncate(text, size) {
+    const value = String(text || "").trim();
+    return value.length > size ? value.slice(0, size) + "…" : value;
+  }
+  function nearBottom(el, threshold = 90) {
+    return el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+  }
+  function scrollToBottom(el) {
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }
+  function toast(message, type = "") {
+    const el = $("#toast");
+    el.textContent = message;
+    el.className = "toast" + (type ? " " + type : "");
+    el.classList.remove("hidden");
+    clearTimeout(state.toastTimer);
+    state.toastTimer = setTimeout(() => el.classList.add("hidden"), 3000);
+  }
+  function renderMarkdown(markdown) {
+    const text = escapeHtml(markdown || "");
+    const lines = text.split("\n");
+    let out = "";
+    let inCode = false;
+    let code = [];
+    const inline = (value) => value
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("```")) {
+        if (inCode) {
+          out += "<pre><code>" + code.join("\n") + "</code></pre>";
+          code = [];
+        }
+        inCode = !inCode;
+        continue;
+      }
+      if (inCode) {
+        code.push(line);
+        continue;
+      }
+      if (/^#{1,4}\s+/.test(trimmed)) {
+        out += '<div class="md-h">' + inline(trimmed.replace(/^#{1,4}\s+/, "")) + "</div>";
+        continue;
+      }
+      if (/^[-*·•]\s+/.test(trimmed)) {
+        out += '<div class="md-li">• ' + inline(trimmed.replace(/^[-*·•]\s+/, "")) + "</div>";
+        continue;
+      }
+      if (/^\d+[.、)]\s+/.test(trimmed)) {
+        out += '<div class="md-li">' + inline(trimmed) + "</div>";
+        continue;
+      }
+      if (!trimmed) {
+        out += '<div class="md-gap"></div>';
+        continue;
+      }
+      out += "<div>" + inline(trimmed) + "</div>";
+    }
+    if (inCode && code.length) {
+      out += "<pre><code>" + code.join("\n") + "</code></pre>";
+    }
+    return out;
+  }
+
+  // ---------- 状态与采集 ----------
+  function applyStatus(status) {
+    if (!status || typeof status !== "object") return;
+    // 采集状态 SSE 只带 capture/asr/audio_stats，不能把初始化拿到的
+    // 模型、笔记、术语等字段覆盖成空。
+    const previous = state.status && typeof state.status === "object" ? state.status : {};
+    const merged = Object.assign({}, previous, status);
+    state.status = merged;
+    const capture = merged.capture || "stopped";
+    const asr = merged.asr || "idle";
+    $("#captureState").textContent = capture;
+    $("#asrState").textContent = asr;
+    $("#captureDot").className = "dot " + (capture === "capturing" ? "on" : capture === "error" ? "error" : "");
+    $("#asrDot").className = "dot " + (asr === "connected" ? "on" : "");
+    setCaptureUI(capture);
+    const provider = merged.llm_provider || "";
+    const model = merged.llm_model || "";
+    const label = provider ? provider + (model ? " / " + model : "") : "--";
+    $("#llmState").textContent = label;
+    $("#llmState2").textContent = label;
+    const badge = $("#modeBadge");
+    badge.title = merged.cloud_text
+      ? "音频仅在本机 ASR；问题文本会发送到云端模型"
+      : "全部本地处理";
+    if (merged.notes_chunks !== undefined) {
+      $("#notesState").textContent = merged.notes_mode
+        ? merged.notes_chunks + " 段"
+        : "未启用";
+    }
+    if (merged.asr_terms !== undefined) {
+      $("#termsState").textContent = merged.asr_terms ? merged.asr_terms + " 个" : "未启用";
+    }
+    if (
+      merged.session_id && state.isLive && !state.viewingSessionId &&
+      (capture === "capturing" || capture === "starting") &&
+      state.sessionId !== merged.session_id
+    ) {
+      // 采集进行中时以服务端会话为准，避免页面重开后事件落到旧会话。
+      state.sessionId = merged.session_id;
+      localStorage.setItem(STORAGE.session, state.sessionId);
+    }
+    updateBanner();
+  }
+
+  let statusRefreshInFlight = false;
+  async function refreshStatus() {
+    if (statusRefreshInFlight) return;
+    statusRefreshInFlight = true;
+    state.statusRefreshTried = true;
+    try {
+      applyStatus(await getJSON("/api/status"));
+    } catch (error) {
+      // 初始化时服务可能还没完全就绪；静默重试，不打扰用户。
+    } finally {
+      statusRefreshInFlight = false;
+    }
+  }
+
+  function setCaptureUI(capture) {
+    const active = capture === "capturing" || capture === "starting";
+    state.capturing = active;
+    $("#start").disabled = active;
+    $("#stop").disabled = !active;
+    $("#start").textContent = capture === "starting" ? "启动中…" : "开始采集";
+    if (active) {
+      $("#pause").disabled = false;
+      $("#pause").textContent = "暂停";
+    } else if (state.paused) {
+      // 暂停本质上是 stop；延迟到达的 status 事件不能把“继续”按钮冲掉。
+      $("#pause").disabled = false;
+      $("#pause").textContent = "继续";
+      $("#stop").disabled = true;
+    } else {
+      $("#pause").disabled = true;
+      $("#pause").textContent = "暂停";
+    }
+  }
+
+  async function getJSON(url) {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error("HTTP " + response.status + (text ? " " + text.slice(0, 120) : ""));
+    }
+    return response.json();
+  }
+
+  async function postJSON(url, body) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body || {}),
+    });
+    let data = {};
+    try { data = await response.json(); } catch (e) { data = {}; }
+    if (!response.ok && !data.error && !data.detail) {
+      data.error = "HTTP " + response.status;
+    }
+    return data;
+  }
+
+  async function startCapture() {
+    if (state.viewingSessionId) {
+      toast("正在查看历史会话，请先点“返回实时”", "error");
+      return;
+    }
+    if (state.capturing) return;
+    state.paused = false;
+    $("#pause").textContent = "暂停";
+    const button = $("#start");
+    const previous = button.textContent;
+    button.disabled = true;
+    button.textContent = "启动中…";
+    try {
+      const result = await postJSON("/api/capture/start", {
+        mode: $("#source").value,
+        session_id: state.sessionId,
+      });
+      if (result.session_id) {
+        state.sessionId = result.session_id;
+        localStorage.setItem(STORAGE.session, state.sessionId);
+      }
+      applyStatus(result);
+      if (!state.status || !state.status.llm_provider) refreshStatus();
+      if (!result.ok) toast(result.error || "启动采集失败", "error");
+      else if (result.capture === "starting") toast("正在加载语音模型…");
+    } catch (error) {
+      toast("启动采集失败：" + error.message, "error");
+    } finally {
+      if (!state.capturing) {
+        button.disabled = false;
+        button.textContent = previous || "开始采集";
+      }
+    }
+  }
+
+  async function stopCapture() {
+    try {
+      const result = await postJSON("/api/capture/stop");
+      state.paused = false;
+      applyStatus(result);
+      $("#pause").textContent = "暂停";
+    } catch (error) {
+      toast("停止采集失败：" + error.message, "error");
+    }
+  }
+
+  async function togglePause() {
+    if (!state.paused) {
+      await stopCapture();
+      state.paused = true;
+      $("#pause").textContent = "继续";
+      $("#pause").disabled = false;
+      $("#stop").disabled = true;
+      toast("已暂停采集，模型上下文保留");
+    } else {
+      state.paused = false;
+      $("#pause").textContent = "暂停";
+      await startCapture();
+    }
+  }
+
+  async function clearContext() {
+    try {
+      await postJSON("/api/context/clear", { session_id: state.sessionId });
+      toast("已清空模型上下文；历史问答仍保留", "ok");
+    } catch (error) {
+      toast("清空上下文失败：" + error.message, "error");
+    }
+  }
+
+  // ---------- 会话历史 ----------
+  async function loadSessionList(options = {}) {
+    try {
+      const data = await getJSON("/api/sessions?limit=50");
+      state.historySessions = Array.isArray(data.items) ? data.items : [];
+    } catch (error) {
+      state.historySessions = [];
+      if (!options.silent) console.warn("load sessions failed", error);
+    }
+    renderSessionSelect();
+    renderSessionList();
+  }
+
+  function sessionLabel(item) {
+    const date = fmtDateTime(item.last_at);
+    const title = item.title || "未命名会话";
+    return (date ? date + " · " : "") + truncate(title, 34) +
+      (item.qa_count ? " (" + item.qa_count + ")" : "");
+  }
+
+  function renderSessionSelect() {
+    const select = $("#sessionSelect");
+    const current = state.viewingSessionId || "__live__";
+    const rows = [];
+    rows.push('<option value="__live__">当前会话（实时）</option>');
+    rows.push('<option value="__new__">＋ 新建会话</option>');
+    for (const item of state.historySessions) {
+      if (item.session_id === state.sessionId) continue;
+      rows.push('<option value="' + escapeAttr(item.session_id) + '">' +
+        escapeHtml(sessionLabel(item)) + "</option>");
+    }
+    select.innerHTML = rows.join("");
+    select.value = current;
+  }
+
+  function renderSessionList() {
+    const box = $("#sessionList");
+    const items = [];
+    const liveRecord = state.historySessions.find((item) => item.session_id === state.sessionId) || {};
+    items.push({
+      session_id: "__live__",
+      title: "当前会话（实时）",
+      last_at: liveRecord.last_at || "",
+      qa_count: state.viewingSessionId ? (liveRecord.qa_count || 0) : state.turns.length,
+      transcript_count: state.viewingSessionId ? (liveRecord.transcript_count || 0) : state.transcript.length,
+      current: true,
+    });
+    for (const item of state.historySessions) {
+      if (item.session_id === state.sessionId) continue;
+      items.push(item);
+    }
+    if (!items.length) {
+      box.innerHTML = '<div class="empty-mini">还没有历史会话。开始采集或手动提问后，这里会出现记录。</div>';
+      return;
+    }
+    box.innerHTML = items.map((item) => {
+      const isViewing = state.viewingSessionId && item.session_id === state.viewingSessionId;
+      const isCurrent = item.session_id === "__live__" ||
+        (item.session_id === state.sessionId && !state.viewingSessionId);
+      const cls = "session-item" + (isViewing ? " viewing" : isCurrent ? " current" : "");
+      const meta = [];
+      if (item.last_at) meta.push(fmtDateTime(item.last_at));
+      meta.push((item.qa_count || 0) + " 问答");
+      meta.push((item.transcript_count || 0) + " 转写");
+      return '<div class="' + cls + '" data-session="' + escapeAttr(item.session_id) + '">' +
+        '<div class="session-title">' + escapeHtml(item.title || "未命名会话") + "</div>" +
+        '<div class="session-meta">' +
+        (isCurrent ? '<span class="session-badge live">当前</span>' : "") +
+        (isViewing ? '<span class="session-badge">查看中</span>' : "") +
+        meta.map(escapeHtml).join("<span>·</span>") +
+        "</div></div>";
+    }).join("");
+    $$("[data-session]", box).forEach((el) => {
+      el.onclick = () => {
+        const sessionId = el.dataset.session;
+        if (sessionId === "__live__") returnToLive();
+        else loadHistorySession(sessionId);
+      };
+    });
+    const deleteButton = $("#deleteSession");
+    deleteButton.classList.toggle("hidden", !state.viewingSessionId);
+  }
+
+  async function fetchSession(sessionId) {
+    const response = await fetch("/api/sessions/" + encodeURIComponent(sessionId), { cache: "no-store" });
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error("HTTP " + response.status + (text ? " " + text.slice(0, 120) : ""));
+    }
+    return response.json();
+  }
+
+  function makeTurn(fields = {}) {
+    return {
+      id: fields.id || ("t" + (++state.turnSeq)),
+      traceId: fields.traceId || "",
+      question: fields.question || "",
+      rawQuestion: fields.rawQuestion || "",
+      correctedText: fields.correctedText || fields.question || "",
+      answer: fields.answer || "",
+      sources: Array.isArray(fields.sources) ? fields.sources : [],
+      corrections: Array.isArray(fields.corrections) ? fields.corrections : [],
+      pass1Text: fields.pass1Text || "",
+      asrEngine: fields.asrEngine || "",
+      llmCorrection: fields.llmCorrection || null,
+      sourceType: fields.sourceType || "auto",
+      status: fields.status || "pending",
+      time: fields.time || new Date().toISOString(),
+      utteranceId: fields.utteranceId || null,
+      startMs: fields.startMs == null ? null : fields.startMs,
+      endMs: fields.endMs == null ? null : fields.endMs,
+      lowConfidence: !!fields.lowConfidence,
+      error: fields.error || "",
+      ttft: fields.ttft == null ? null : fields.ttft,
+      e2e: fields.e2e == null ? null : fields.e2e,
+      ignore: false,
+      historical: !!fields.historical,
+      startedAt: performance.now(),
+      renderQueued: false,
+      el: null,
+      qEl: null,
+      answerEl: null,
+      statusEl: null,
+      sourcesBtn: null,
+      metricsEl: null,
+    };
+  }
+
+  function turnFromRecord(row, index) {
+    const traceId = row.trace_id || "";
+    const question = row.question || row.corrected_text || row.raw_text || "（无问题）";
+    const metrics = row.latency_metrics || {};
+    return makeTurn({
+      id: traceId ? "h-" + traceId : "h-" + index,
+      traceId,
+      question,
+      rawQuestion: row.raw_text || "",
+      correctedText: row.corrected_text || question,
+      answer: row.answer || "",
+      sources: Array.isArray(row.retrieval_top_k) ? row.retrieval_top_k : [],
+      corrections: Array.isArray(row.corrections) ? row.corrections : [],
+      pass1Text: row.pass1_text || "",
+      asrEngine: row.asr_engine || "",
+      llmCorrection: row.llm_correction || null,
+      sourceType: row.source === "speech" ? "auto" : "manual",
+      status: row.status || "done",
+      time: row.recorded_at || "",
+      utteranceId: row.utterance_id || null,
+      startMs: row.question_start_ms == null ? null : row.question_start_ms,
+      endMs: row.question_end_ms == null ? null : row.question_end_ms,
+      lowConfidence: !!row.retrieval_low_confidence,
+      error: row.error || "",
+      ttft: metrics.ttft_ms == null ? null : Math.round(metrics.ttft_ms),
+      e2e: metrics.end_to_end_ms == null ? null : Math.round(metrics.end_to_end_ms),
+      historical: true,
+    });
+  }
+
+  function clearTimeline() {
+    state.turns = [];
+    state.byId.clear();
+    state.byTrace.clear();
+    state.pendingAuto = null;
+    state.activeTurnId = null;
+    state.selectedTurnId = null;
+    state.atBottom = true;
+    state.newWhileAway = false;
+    $("#timeline").innerHTML = "";
+    renderEmpty();
+    updateCancelButton();
+    updateBackLatest();
+  }
+
+  function emptyMarkup() {
+    return '<div class="empty-state" id="emptyState">' +
+      '<div class="empty-icon">◌</div>' +
+      '<div class="empty-title">开始采集后，对方的问题会自动出现在这里</div>' +
+      '<div class="empty-sub">也可以直接在下方输入问题。切到“上下文模式”可查看实时转写、知识来源和 ASR 纠错。</div>' +
+      "</div>";
+  }
+
+  function renderEmpty() {
+    const timeline = $("#timeline");
+    if (state.turns.length) return;
+    timeline.innerHTML = emptyMarkup();
+  }
+
+  function applyDetail(detail, options = {}) {
+    clearTimeline();
+    state.transcript = Array.isArray(detail.transcript) ? detail.transcript.slice() : [];
+    state.transcript.sort((a, b) => {
+      const left = a.start_ms == null ? 0 : a.start_ms;
+      const right = b.start_ms == null ? 0 : b.start_ms;
+      return left - right;
+    });
+    state.partials.clear();
+    state.partialEls.clear();
+    state.lastFinal = null;
+    state.followTranscript = true;
+    state.newWhileAway = false;
+    for (let index = 0; index < state.transcript.length; index += 1) {
+      const item = state.transcript[index];
+      if (item.text) state.lastFinal = {
+        kind: "final",
+        text: item.text,
+        raw_text: item.raw_text,
+        pass1_text: item.pass1_text,
+        corrections: item.corrections || [],
+        channel: item.channel,
+        utterance_id: item.utterance_id,
+        start_ms: item.start_ms,
+        end_ms: item.end_ms,
+      };
+    }
+    const rows = Array.isArray(detail.qa) ? detail.qa : [];
+    rows.forEach((row, index) => addTurn(turnFromRecord(row, index), { scroll: false, render: false }));
+    state.turns.forEach(updateTurn);
+    renderTranscript();
+    if (state.turns.length) {
+      selectTurn(state.turns[state.turns.length - 1], false);
+    } else {
+      renderEmpty();
+      renderSources(null);
+      renderCorrections(null);
+    }
+    state.atBottom = true;
+    requestAnimationFrame(() => scrollToBottom($("#timeline")));
+    updateBackLatest();
+    updateCancelButton();
+  }
+
+  async function loadLiveSession(sessionId, options = {}) {
+    let detail = null;
+    try {
+      detail = await fetchSession(sessionId);
+    } catch (error) {
+      if (!options.silent) toast("加载会话失败：" + error.message, "error");
+    }
+    state.viewingSessionId = null;
+    state.isLive = true;
+    state.liveNotice = false;
+    state.sessionId = sessionId;
+    localStorage.setItem(STORAGE.session, sessionId);
+    if (detail) applyDetail(detail, { live: true });
+    else {
+      clearTimeline();
+      state.transcript = [];
+      state.partials.clear();
+      state.partialEls.clear();
+      state.lastFinal = null;
+      renderTranscript();
+      renderSources(null);
+      renderCorrections(null);
+    }
+    updateBanner();
+    renderSessionSelect();
+    renderSessionList();
+  }
+
+  async function loadHistorySession(sessionId) {
+    if (sessionId === state.sessionId && !state.viewingSessionId) return;
+    let detail = null;
+    try {
+      detail = await fetchSession(sessionId);
+    } catch (error) {
+      toast("加载历史会话失败：" + error.message, "error");
+      renderSessionSelect();
+      return;
+    }
+    if (!detail) {
+      toast("会话不存在或已删除", "error");
+      renderSessionSelect();
+      return;
+    }
+    state.viewingSessionId = sessionId;
+    state.isLive = false;
+    state.liveNotice = false;
+    applyDetail(detail, { live: false });
+    updateBanner();
+    renderSessionSelect();
+    renderSessionList();
+  }
+
+  async function returnToLive() {
+    const status = state.status || {};
+    let sessionId = state.sessionId;
+    if ((status.capture === "capturing" || status.capture === "starting") && status.session_id) {
+      sessionId = status.session_id;
+    }
+    if (!sessionId) sessionId = localStorage.getItem(STORAGE.session) || newId();
+    await loadLiveSession(sessionId, { silent: true });
+    toast("已返回实时会话", "ok");
+  }
+
+  async function newSession() {
+    if (state.capturing) {
+      if (!window.confirm("停止当前采集并新建会话？")) return;
+      await stopCapture();
+    }
+    const previous = state.sessionId;
+    const sessionId = newId();
+    state.sessionId = sessionId;
+    state.viewingSessionId = null;
+    state.isLive = true;
+    state.liveNotice = false;
+    state.paused = false;
+    $("#pause").textContent = "暂停";
+    $("#pause").disabled = true;
+    $("#stop").disabled = true;
+    localStorage.setItem(STORAGE.session, sessionId);
+    clearTimeline();
+    state.transcript = [];
+    state.partials.clear();
+    state.partialEls.clear();
+    state.lastFinal = null;
+    renderTranscript();
+    renderSources(null);
+    renderCorrections(null);
+    updateBanner();
+    renderSessionSelect();
+    renderSessionList();
+    if (previous) {
+      postJSON("/api/context/clear", { session_id: previous }).catch(() => {});
+    }
+    postJSON("/api/context/clear", { session_id: sessionId }).catch(() => {});
+    $("#manual").value = "";
+    autoResizeComposer();
+    $("#manual").focus();
+    toast("已新建会话", "ok");
+  }
+
+  async function deleteViewingSession() {
+    const sessionId = state.viewingSessionId;
+    if (!sessionId) return;
+    if (!window.confirm("删除这个会话的本机记录？删除后不可恢复。")) return;
+    try {
+      const result = await fetch("/api/sessions/" + encodeURIComponent(sessionId), { method: "DELETE" });
+      if (!result.ok) throw new Error("HTTP " + result.status);
+      toast("会话已删除", "ok");
+      state.viewingSessionId = null;
+      await loadSessionList({ silent: true });
+      await returnToLive();
+    } catch (error) {
+      toast("删除失败：" + error.message, "error");
+    }
+  }
+
+  function updateBanner() {
+    const banner = $("#viewBanner");
+    if (!state.viewingSessionId) {
+      banner.classList.add("hidden");
+      return;
+    }
+    const item = state.historySessions.find((row) => row.session_id === state.viewingSessionId);
+    const title = item ? item.title : "历史会话";
+    const parts = ["正在查看历史会话：" + truncate(title, 42), "只读"];
+    if (state.status && state.status.capture === "capturing") parts.push("后台采集仍在进行");
+    if (state.liveNotice) parts.push("有新的实时问答");
+    $("#viewBannerText").textContent = parts.join(" · ");
+    banner.classList.remove("hidden");
+  }
+
+  // ---------- 时间线 / 问答卡片 ----------
+  function addTurn(turn, options = {}) {
+    if (!turn || state.byId.has(turn.id)) return state.byId.get(turn.id) || null;
+    state.turns.push(turn);
+    state.byId.set(turn.id, turn);
+    if (turn.traceId) state.byTrace.set(turn.traceId, turn);
+    const el = createTurnEl(turn);
+    turn.el = el;
+    const empty = $("#emptyState");
+    if (empty) empty.remove();
+    $("#timeline").appendChild(el);
+    updateTurn(turn);
+    if (options.scroll !== false && state.atBottom) {
+      requestAnimationFrame(() => scrollToBottom($("#timeline")));
+    }
+    return turn;
+  }
+
+  function createTurnEl(turn) {
+    const article = document.createElement("article");
+    article.className = "turn";
+    article.dataset.id = turn.id;
+    article.innerHTML =
+      '<div class="q-row">' +
+        '<div class="q-mark">Q</div>' +
+        '<div class="q-main">' +
+          '<div class="q-text"></div>' +
+          '<div class="q-meta">' +
+            '<span class="kind-badge"></span>' +
+            '<span class="q-time"></span>' +
+            '<span class="status-badge"></span>' +
+          "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="a-row">' +
+        '<div class="a-mark">A</div>' +
+        '<div class="a-main">' +
+          '<div class="a-body"></div>' +
+          '<div class="a-foot">' +
+            '<button type="button" class="foot-btn sources-btn"></button>' +
+            '<button type="button" class="foot-btn context-btn">上下文</button>' +
+            '<button type="button" class="foot-btn copy-btn">复制</button>' +
+            '<button type="button" class="foot-btn reanswer-btn">重新回答</button>' +
+            '<span class="a-metrics"></span>' +
+          "</div>" +
+        "</div>" +
+      "</div>";
+    turn.qEl = $(".q-text", article);
+    turn.answerEl = $(".a-body", article);
+    turn.statusEl = $(".status-badge", article);
+    turn.sourcesBtn = $(".sources-btn", article);
+    turn.metricsEl = $(".a-metrics", article);
+    article.addEventListener("click", () => selectTurn(turn, false));
+    turn.sourcesBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      selectTurn(turn, false);
+      setMode("context");
+      setTab("sources");
+    });
+    $(".context-btn", article).addEventListener("click", (event) => {
+      event.stopPropagation();
+      selectTurn(turn, false);
+      setMode("context");
+      setTab("transcript");
+      focusTranscript(turn);
+    });
+    $(".copy-btn", article).addEventListener("click", (event) => {
+      event.stopPropagation();
+      copyTurn(turn);
+    });
+    $(".reanswer-btn", article).addEventListener("click", (event) => {
+      event.stopPropagation();
+      reanswerTurn(turn);
+    });
+    return article;
+  }
+
+  function updateTurn(turn) {
+    if (!turn || !turn.el) return;
+    turn.qEl.textContent = turn.question || "（识别中…）";
+    const kind = turn.sourceType === "manual" ? "手动提问" : "自动识别";
+    const kindEl = $(".kind-badge", turn.el);
+    kindEl.textContent = kind;
+    kindEl.className = "kind-badge " + (turn.sourceType === "manual" ? "manual" : "auto");
+    $(".q-time", turn.el).textContent = fmtDateTime(turn.time);
+    const status = turn.status || "pending";
+    turn.statusEl.textContent = STATUS_TEXT[status] || status;
+    turn.statusEl.className = "status-badge " + status;
+    turn.sourcesBtn.textContent = "来源 " + (turn.sources ? turn.sources.length : 0);
+    turn.sourcesBtn.title = turn.lowConfidence
+      ? "知识库未命中，本回答使用通用知识"
+      : "查看检索到的知识片段";
+    const reanswer = $(".reanswer-btn", turn.el);
+    reanswer.disabled = !!turn.historical;
+    reanswer.title = turn.historical ? "历史会话只读" : "用这个问题重新生成回答";
+    reanswer.classList.toggle("hidden", false);
+    updateTurnAnswer(turn);
+    turn.el.classList.toggle("selected", state.selectedTurnId === turn.id);
+    turn.el.classList.toggle("streaming", status === "streaming");
+    const metrics = [];
+    if (turn.ttft != null) metrics.push("TTFT " + turn.ttft + "ms");
+    if (turn.e2e != null) metrics.push("端到端 " + turn.e2e + "ms");
+    if (turn.historical) metrics.push("历史记录");
+    turn.metricsEl.textContent = metrics.join(" · ");
+  }
+
+  function updateTurnAnswer(turn) {
+    if (!turn || !turn.answerEl) return;
+    if (turn.answer) {
+      turn.answerEl.innerHTML = renderMarkdown(turn.answer);
+      if (turn.status === "error" && turn.error) {
+        turn.answerEl.innerHTML += '<div class="err" style="margin-top:6px">' +
+          escapeHtml(turn.error) + "</div>";
+      }
+    } else if (turn.status === "error") {
+      turn.answerEl.innerHTML = '<span class="err">' + escapeHtml(turn.error || "生成失败") + "</span>";
+    } else if (turn.status === "interrupted") {
+      turn.answerEl.innerHTML = '<span class="muted">' + escapeHtml(turn.error || "已中断") + "</span>";
+    } else if (turn.status === "pending") {
+      turn.answerEl.innerHTML = '<span class="muted">已识别到问题，等待回答…</span>';
+    } else if (turn.status === "done") {
+      turn.answerEl.innerHTML = '<span class="muted">（模型没有返回内容）</span>';
+    } else if (turn.status === "skip") {
+      turn.answerEl.innerHTML = '<span class="muted">（这句话不是问题，已跳过）</span>';
+    } else {
+      turn.answerEl.innerHTML = '<span class="muted">正在生成回答…</span>';
+    }
+    if (state.selectedTurnId === turn.id) {
+      const sourcesFor = $("#sourcesFor");
+      if (sourcesFor) sourcesFor.textContent = "Q：" + truncate(turn.question, 60);
+    }
+  }
+
+  function scheduleTurnRender(turn) {
+    if (!turn || turn.renderQueued) return;
+    turn.renderQueued = true;
+    requestAnimationFrame(() => {
+      turn.renderQueued = false;
+      updateTurnAnswer(turn);
+      if (state.atBottom) scrollToBottom($("#timeline"));
+    });
+  }
+
+  function selectTurn(turn, focus) {
+    if (!turn) return;
+    state.selectedTurnId = turn.id;
+    state.turns.forEach((item) => {
+      if (item.el) item.el.classList.toggle("selected", item.id === turn.id);
+    });
+    renderSources(turn);
+    renderCorrections(turn);
+    if (focus && state.mode === "context" && state.tab === "transcript") {
+      focusTranscript(turn);
+    }
+  }
+
+  function copyTurn(turn) {
+    const text = "Q：" + (turn.question || "") + "\n\nA：" + (turn.answer || "");
+    const done = () => toast("已复制这条问答", "ok");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => toast("复制失败", "error"));
+    } else {
+      const area = document.createElement("textarea");
+      area.value = text;
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand("copy"); done(); } catch (e) { toast("复制失败", "error"); }
+      area.remove();
+    }
+  }
+
+  function reanswerTurn(turn) {
+    if (!turn) return;
+    if (turn.historical || state.viewingSessionId) {
+      toast("历史会话只读，请先返回实时", "error");
+      return;
+    }
+    if (turn.status === "streaming") {
+      toast("这条回答还在生成中");
+      return;
+    }
+    askQuestion(turn.question, { replaceTurn: turn });
+  }
+
+  // ---------- SSE / 回答路由 ----------
+  function bindMetaToTurn(turn, traceId, meta) {
+    if (!turn || turn.ignore) return;
+    if (turn.traceId && traceId && turn.traceId !== traceId) {
+      state.byTrace.delete(turn.traceId);
+    }
+    turn.traceId = traceId || turn.traceId || "";
+    if (turn.traceId) state.byTrace.set(turn.traceId, turn);
+    if (meta.question) turn.question = meta.question;
+    if (meta.raw_question) turn.rawQuestion = meta.raw_question;
+    turn.sources = Array.isArray(meta.sources) ? meta.sources : [];
+    turn.lowConfidence = !!meta.low_confidence;
+    if (meta.llm_correction) turn.llmCorrection = meta.llm_correction;
+    turn.answer = "";
+    turn.error = "";
+    turn.status = "streaming";
+    turn.startedAt = performance.now();
+    state.activeTurnId = turn.id;
+    updateCancelButton();
+    updateTurn(turn);
+    selectTurn(turn, false);
+  }
+
+  function appendTokenToTurn(turn, delta) {
+    if (!turn || turn.status !== "streaming" || !delta) return;
+    if (!turn.answer) {
+      turn.ttft = Math.round(performance.now() - turn.startedAt);
+      updateGlobalMetrics(turn);
+    }
+    turn.answer += delta;
+    scheduleTurnRender(turn);
+    if (!state.atBottom) {
+      state.newWhileAway = true;
+      updateBackLatest();
+    }
+  }
+
+  function finishTurnTo(turn, status, metrics) {
+    if (!turn) return;
+    let finalStatus = status === "interrupted" ? "interrupted" : (status === "error" ? "error" : "done");
+    // 用户主动停止后，旧请求晚到的 done 不能把“已中断”覆盖回“完成”。
+    if (turn.status === "interrupted" && finalStatus === "done") finalStatus = "interrupted";
+    turn.status = finalStatus;
+    if (finalStatus === "interrupted" && !turn.error) turn.error = "已中断";
+    if (metrics && metrics.ttft_ms != null) turn.ttft = Math.round(metrics.ttft_ms);
+    if (metrics && metrics.end_to_end_ms != null) turn.e2e = Math.round(metrics.end_to_end_ms);
+    else if (turn.startedAt) turn.e2e = Math.round(performance.now() - turn.startedAt);
+    if (finalStatus === "done" && !turn.answer) {
+      turn.answer = "";
+    }
+    if (state.activeTurnId === turn.id) state.activeTurnId = null;
+    if (state.pendingAuto === turn) state.pendingAuto = null;
+    updateTurn(turn);
+    updateGlobalMetrics(turn);
+    updateCancelButton();
+    refreshSessionsSoon();
+  }
+
+  function failTurnTo(turn, message, data) {
+    if (!turn) return;
+    turn.status = "error";
+    turn.error = message || "生成失败";
+    if (data && data.metrics) {
+      if (data.metrics.ttft_ms != null) turn.ttft = Math.round(data.metrics.ttft_ms);
+      if (data.metrics.end_to_end_ms != null) turn.e2e = Math.round(data.metrics.end_to_end_ms);
+    }
+    if (state.activeTurnId === turn.id) state.activeTurnId = null;
+    if (state.pendingAuto === turn) state.pendingAuto = null;
+    updateTurn(turn);
+    updateGlobalMetrics(turn);
+    updateCancelButton();
+    refreshSessionsSoon();
+  }
+
+  function markTurnInterrupted(turn, message) {
+    if (!turn) return;
+    turn.status = "interrupted";
+    turn.error = message || "已中断";
+    turn.ignore = true;
+    if (state.activeTurnId === turn.id) state.activeTurnId = null;
+    if (state.pendingAuto === turn) state.pendingAuto = null;
+    updateTurn(turn);
+    updateCancelButton();
+  }
+
+  function handleQuestionDecision(decision) {
+    if (!decision || !decision.is_question) return;
+    if (!state.isLive || state.viewingSessionId) {
+      state.liveNotice = true;
+      updateBanner();
+      return;
+    }
+    const last = state.lastFinal || {};
+    const utteranceId = decision.utterance_id || last.utterance_id || null;
+    let turn = null;
+    if (state.pendingAuto && state.pendingAuto.status === "pending") {
+      turn = state.pendingAuto;
+    } else if (utteranceId) {
+      turn = state.turns.find((item) =>
+        item.utteranceId === utteranceId &&
+        (item.status === "pending" || item.status === "streaming")
+      ) || null;
+    }
+    if (turn) {
+      turn.question = decision.normalized_query || turn.question;
+      turn.rawQuestion = last.raw_text || decision.text || turn.rawQuestion;
+      turn.corrections = Array.isArray(last.corrections) ? last.corrections : turn.corrections;
+      turn.pass1Text = last.pass1_text || turn.pass1Text;
+      turn.utteranceId = utteranceId || turn.utteranceId;
+      turn.startMs = decision.start_ms == null ? turn.startMs : decision.start_ms;
+      turn.endMs = decision.end_ms == null ? turn.endMs : decision.end_ms;
+      updateTurn(turn);
+    } else {
+      if (state.pendingAuto && state.pendingAuto.status === "pending") {
+        markTurnInterrupted(state.pendingAuto, "被新问题打断");
+      }
+      turn = makeTurn({
+        question: decision.normalized_query || decision.text || "识别到问题",
+        rawQuestion: last.raw_text || decision.text || "",
+        correctedText: decision.normalized_query || decision.text || "",
+        corrections: Array.isArray(last.corrections) ? last.corrections : [],
+        pass1Text: last.pass1_text || "",
+        sourceType: "auto",
+        status: "pending",
+        time: new Date().toISOString(),
+        utteranceId,
+        startMs: decision.start_ms == null ? null : decision.start_ms,
+        endMs: decision.end_ms == null ? null : decision.end_ms,
+      });
+      addTurn(turn, { scroll: state.atBottom });
+      state.pendingAuto = turn;
+    }
+    if (!state.atBottom) {
+      state.newWhileAway = true;
+      updateBackLatest();
+    }
+  }
+
+  function handleAutoAnswer(payload) {
+    if (!payload || typeof payload !== "object") return;
+    if (!state.isLive || state.viewingSessionId) {
+      state.liveNotice = true;
+      updateBanner();
+      return;
+    }
+    const kind = payload.event || payload.type;
+    const data = payload.data || payload;
+    const traceId = payload.trace_id || data.trace_id || "";
+    if (kind === "meta") {
+      let turn = traceId ? state.byTrace.get(traceId) : null;
+      if (!turn && state.pendingAuto) turn = state.pendingAuto;
+      if (!turn) {
+        turn = makeTurn({
+          question: data.question || "识别到问题",
+          rawQuestion: data.raw_question || "",
+          correctedText: data.question || "",
+          sourceType: "auto",
+          status: "streaming",
+          time: new Date().toISOString(),
+        });
+        addTurn(turn, { scroll: state.atBottom });
+      }
+      state.pendingAuto = null;
+      bindMetaToTurn(turn, traceId, data);
+      return;
+    }
+    let turn = traceId ? state.byTrace.get(traceId) : null;
+    // 有 trace_id 但找不到对应卡片时，说明是已被替换的旧回答，直接丢弃；
+    // 只有没有 trace_id 的 interrupted 等控制事件才回退到当前活动卡片。
+    if (!turn && !traceId && state.activeTurnId) turn = state.byId.get(state.activeTurnId);
+    if (!turn) return;
+    if (kind === "token") {
+      appendTokenToTurn(turn, data.delta || "");
+    } else if (kind === "done") {
+      finishTurnTo(turn, data.status || "done", data.metrics || {});
+    } else if (kind === "error") {
+      failTurnTo(turn, data.message || "生成失败", data);
+    } else if (kind === "interrupted") {
+      markTurnInterrupted(turn, "被新问题打断");
+    }
+  }
+
+  function handleTranscript(item) {
+    if (!item || typeof item !== "object") return;
+    if (!state.isLive || state.viewingSessionId) return;
+    if (item.kind === "partial") {
+      setPartialTranscript(item);
+    } else {
+      state.lastFinal = item;
+      appendFinalTranscript(item);
+    }
+  }
+
+  async function askQuestion(question, options = {}) {
+    const text = String(question || "").trim();
+    if (!text) return;
+    if (state.viewingSessionId) {
+      toast("正在查看历史会话，请先返回实时", "error");
+      return;
+    }
+    const existingActive = state.activeTurnId ? state.byId.get(state.activeTurnId) : null;
+    if (existingActive && existingActive.status === "streaming" && existingActive !== options.replaceTurn) {
+      postJSON("/api/answer/cancel", { session_id: state.sessionId }).catch(() => {});
+      markTurnInterrupted(existingActive, "已被新问题打断");
+    }
+    if (state.pendingAuto && state.pendingAuto !== options.replaceTurn) {
+      markTurnInterrupted(state.pendingAuto, "已被手动提问打断");
+    }
+    let turn = options.replaceTurn || null;
+    if (turn) {
+      if (turn.traceId) state.byTrace.delete(turn.traceId);
+      turn.traceId = "";
+      turn.question = text;
+      turn.correctedText = text;
+      turn.answer = "";
+      turn.error = "";
+      turn.sources = [];
+      turn.lowConfidence = false;
+      turn.status = "streaming";
+      turn.ignore = false;
+      turn.startedAt = performance.now();
+      turn.ttft = null;
+      turn.e2e = null;
+      updateTurn(turn);
+      selectTurn(turn, false);
+    } else {
+      turn = makeTurn({
+        question: text,
+        correctedText: text,
+        sourceType: "manual",
+        status: "streaming",
+        time: new Date().toISOString(),
+      });
+      addTurn(turn, { scroll: true });
+      selectTurn(turn, false);
+    }
+    state.activeTurnId = turn.id;
+    state.pendingAuto = null;
+    updateCancelButton();
+    const controller = new AbortController();
+    state.answerAbort = controller;
+    const recent = state.transcript
+      .filter((item) => item && item.text)
+      .slice(-6)
+      .map((item) => item.text);
+    try {
+      const response = await fetch("/api/answer/stream", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          question: text,
+          session_id: state.sessionId,
+          recent,
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error("HTTP " + response.status + (body ? " " + body.slice(0, 100) : ""));
+      }
+      await readSSE(response, (event, data) => {
+        if (event === "meta") {
+          bindMetaToTurn(turn, data.trace_id || "", data);
+        } else if (event === "token") {
+          appendTokenToTurn(turn, data.delta || "");
+        } else if (event === "done") {
+          finishTurnTo(turn, data.status || "done", data.metrics || {});
+        } else if (event === "error") {
+          failTurnTo(turn, data.message || "生成失败", data);
+        }
+      });
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        markTurnInterrupted(turn, "已停止回答");
+      } else {
+        failTurnTo(turn, error.message || String(error));
+      }
+    } finally {
+      if (state.answerAbort === controller) state.answerAbort = null;
+      if (turn.status === "streaming") {
+        finishTurnTo(turn, "done", {});
+      }
+    }
+  }
+
+  async function readSSE(response, onEvent) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+      let index = buffer.indexOf("\n\n");
+      while (index >= 0) {
+        const block = buffer.slice(0, index);
+        buffer = buffer.slice(index + 2);
+        let event = "message";
+        let data = "{}";
+        for (const line of block.split("\n")) {
+          if (line.startsWith("event:")) event = line.slice(6).trim();
+          else if (line.startsWith("data:")) data = line.slice(5).trim();
+        }
+        let parsed = {};
+        try { parsed = JSON.parse(data || "{}"); } catch (e) { parsed = {}; }
+        onEvent(event, parsed);
+        index = buffer.indexOf("\n\n");
+      }
+    }
+  }
+
+  function connectEvents() {
+    const events = new EventSource('/api/events');
+    events.addEventListener("status", (event) => {
+      try {
+        applyStatus(JSON.parse(event.data));
+        if (!state.status || !state.status.llm_provider) {
+          if (!state.statusRefreshTried) refreshStatus();
+        }
+      } catch (e) { /* ignore */ }
+    });
+    events.addEventListener("transcript", (event) => {
+      try { handleTranscript(JSON.parse(event.data)); } catch (e) { /* ignore */ }
+    });
+    events.addEventListener("question_decision", (event) => {
+      try { handleQuestionDecision(JSON.parse(event.data)); } catch (e) { /* ignore */ }
+    });
+    events.addEventListener("answer", (event) => {
+      try { handleAutoAnswer(JSON.parse(event.data)); } catch (e) { /* ignore */ }
+    });
+  }
+
+  async function cancelActive() {
+    const turn = state.activeTurnId ? state.byId.get(state.activeTurnId) : null;
+    if (!turn) return;
+    postJSON("/api/answer/cancel", { session_id: state.sessionId }).catch(() => {});
+    markTurnInterrupted(turn, "已停止回答");
+    if (state.answerAbort) {
+      try { state.answerAbort.abort(); } catch (e) { /* ignore */ }
+    }
+  }
+
+  function updateCancelButton() {
+    const turn = state.activeTurnId ? state.byId.get(state.activeTurnId) : null;
+    $("#cancelAnswer").classList.toggle("hidden", !(turn && turn.status === "streaming"));
+  }
+
+  function updateGlobalMetrics(turn) {
+    if (!turn) return;
+    if (turn.ttft != null) $("#ttft").textContent = turn.ttft;
+    if (turn.e2e != null) $("#e2e").textContent = turn.e2e;
+  }
+
+  function refreshSessionsSoon() {
+    clearTimeout(state.refreshTimer);
+    state.refreshTimer = setTimeout(() => loadSessionList({ silent: true }), 450);
+  }
+
+  // ---------- 转写 ----------
+  function speakerOf(item) {
+    if (item.speaker_id && item.speaker_id !== "Mock") return item.speaker_id;
+    // 麦克风既可能是“我”（仅上下文），也可能是“提问方”，用中性标签避免误导。
+    return item.channel === "mic" ? "麦克风" : "对方";
+  }
+
+  function transcriptDetails(item) {
+    const lines = [];
+    if (item.raw_text) lines.push("原始：" + item.raw_text);
+    if (item.pass1_text) lines.push("第一遍：" + item.pass1_text);
+    if (Array.isArray(item.corrections) && item.corrections.length) {
+      lines.push("改动：" + item.corrections.map((c) =>
+        (c.raw || "") + "→" + (c.corrected || "") +
+        (c.reason ? "（" + c.reason + "）" : "")
+      ).join("；"));
+    }
+    return lines.join("\n");
+  }
+
+  function buildTranscriptRow(item, options = {}) {
+    const row = document.createElement("div");
+    row.className = "tr-row " + (options.partial ? "partial" : "final");
+    if (item.utterance_id) row.dataset.utteranceId = item.utterance_id;
+    const top = document.createElement("div");
+    top.className = "tr-top";
+    const speaker = document.createElement("span");
+    speaker.className = "tr-speaker" + (item.channel === "mic" ? " me" : "");
+    speaker.textContent = speakerOf(item);
+    const time = document.createElement("span");
+    let timeValue = item.start_ms;
+    if (!(typeof timeValue === "number" && timeValue > 0)) timeValue = item.recorded_at;
+    time.textContent = fmtStartMs(timeValue);
+    top.appendChild(speaker);
+    top.appendChild(time);
+    if (item.corrected) {
+      const badge = document.createElement("span");
+      badge.className = "corrected";
+      badge.textContent = "已校正";
+      top.appendChild(badge);
+    }
+    const text = document.createElement("div");
+    text.className = "tr-text";
+    text.textContent = item.text || "";
+    row.appendChild(top);
+    row.appendChild(text);
+    const details = transcriptDetails(item);
+    if (details) row.title = details;
+    return row;
+  }
+
+  function renderTranscript() {
+    const box = $("#transcriptList");
+    const wasFollowing = state.followTranscript;
+    const previousTop = box.scrollTop;
+    box.innerHTML = "";
+    state.partialEls.clear();
+    if (!state.transcript.length && !state.partials.size) {
+      box.innerHTML = '<div class="empty-mini">' +
+        (state.isLive ? "开始采集后显示对方和我的实时转写。" : "该会话没有转写记录（旧版本或手动提问）。") +
+        "</div>";
+      return;
+    }
+    for (const item of state.transcript) {
+      box.appendChild(buildTranscriptRow(item));
+    }
+    for (const [key, item] of state.partials) {
+      const row = buildTranscriptRow(item, { partial: true });
+      row.dataset.partialKey = key;
+      box.appendChild(row);
+      state.partialEls.set(key, row);
+    }
+    if (wasFollowing) scrollToBottom(box);
+    else box.scrollTop = previousTop;
+    $("#transcriptFollow").classList.toggle("hidden", wasFollowing);
+    $("#transcriptHint").textContent = state.isLive
+      ? "实时转写 · 系统声音 / 麦克风"
+      : "历史转写 · 只读";
+  }
+
+  function appendFinalTranscript(item) {
+    const key = item.utterance_id || ("legacy-" + (item.channel || "unknown"));
+    state.partials.delete(key);
+    const existing = state.transcript.findIndex((row) =>
+      row.utterance_id && item.utterance_id && row.utterance_id === item.utterance_id
+    );
+    if (existing >= 0) state.transcript[existing] = item;
+    else state.transcript.push(item);
+    renderTranscript();
+  }
+
+  function setPartialTranscript(item) {
+    const key = item.utterance_id || ("legacy-" + (item.channel || "unknown"));
+    const value = Object.assign({}, item, { kind: "partial" });
+    state.partials.set(key, value);
+    let row = state.partialEls.get(key);
+    if (!row) {
+      row = buildTranscriptRow(value, { partial: true });
+      row.dataset.partialKey = key;
+      $("#transcriptList").appendChild(row);
+      state.partialEls.set(key, row);
+      const empty = $("#transcriptList .empty-mini");
+      if (empty) empty.remove();
+    } else {
+      const text = $(".tr-text", row);
+      if (text) text.textContent = item.text || "";
+    }
+    if (state.followTranscript) scrollToBottom($("#transcriptList"));
+  }
+
+  function focusTranscript(turn) {
+    if (!turn) return;
+    setTab("transcript");
+    const list = $("#transcriptList");
+    let row = null;
+    if (turn.utteranceId) {
+      row = Array.from(list.children).find((el) => el.dataset.utteranceId === turn.utteranceId);
+    }
+    if (row) {
+      row.scrollIntoView({ block: "center", behavior: "smooth" });
+      row.classList.add("highlight");
+      setTimeout(() => row.classList.remove("highlight"), 1800);
+      return;
+    }
+    toast(turn.sourceType === "manual"
+      ? "这条是手动提问，没有对应的实时转写"
+      : "这条问答没有对应的转写记录");
+  }
+
+  // ---------- 侧栏：来源 / 纠错 / 会话 ----------
+  function renderSources(turn) {
+    const forLine = $("#sourcesFor");
+    const box = $("#sourcesList");
+    if (!turn) {
+      forLine.textContent = "选择一条问答查看知识来源";
+      box.innerHTML = '<div class="empty-mini">点击问答卡片，或点回答下方的“来源 N”。</div>';
+      return;
+    }
+    forLine.textContent = "Q：" + truncate(turn.question || "", 60);
+    const sources = Array.isArray(turn.sources) ? turn.sources : [];
+    if (!sources.length) {
+      box.innerHTML = '<div class="empty-mini">' +
+        (turn.lowConfidence
+          ? "知识库未命中；本回答使用通用知识。"
+          : "本次回答没有引用知识库片段。") +
+        "</div>";
+      return;
+    }
+    box.innerHTML = sources.map((source) => {
+      const score = Number(source.score);
+      const scoreText = Number.isFinite(score) ? score.toFixed(2) : "--";
+      const text = source.text
+        ? escapeHtml(source.text)
+        : '<span class="muted">（旧记录没有保存片段正文）</span>';
+      return '<div class="source-card">' +
+        '<div class="source-head"><b>' + escapeHtml(source.chunk_id || source.id || "片段") + "</b>" +
+        "<span>" + escapeHtml(source.section || source.source || "") + "</span>" +
+        '<span class="source-score">score ' + scoreText + "</span></div>" +
+        '<div class="source-path">' + escapeHtml(source.source || "") + "</div>" +
+        '<div class="source-text">' + text + "</div>" +
+        "</div>";
+    }).join("");
+  }
+
+  function renderCorrections(turn) {
+    const forLine = $("#correctionsFor");
+    const box = $("#correctionsBody");
+    if (!turn) {
+      forLine.textContent = "选择一条问答查看 ASR 原文和纠错";
+      box.innerHTML = '<div class="empty-mini">点击问答卡片查看原文、纠错和重新回答。</div>';
+      return;
+    }
+    forLine.textContent = "Q：" + truncate(turn.question || "", 60);
+    const blocks = [];
+    blocks.push('<div class="correction-block"><div class="correction-label">整理后问题</div>' +
+      '<div class="correction-value">' + escapeHtml(turn.question || "（空）") + "</div></div>");
+    if (turn.rawQuestion && turn.rawQuestion.trim() !== (turn.question || "").trim()) {
+      blocks.push('<div class="correction-block"><div class="correction-label">ASR 原文</div>' +
+        '<div class="correction-value">' + escapeHtml(turn.rawQuestion) + "</div></div>");
+    }
+    if (turn.pass1Text) {
+      blocks.push('<div class="correction-block"><div class="correction-label">第一遍识别</div>' +
+        '<div class="correction-value">' + escapeHtml(turn.pass1Text) + "</div></div>");
+    }
+    if (Array.isArray(turn.corrections) && turn.corrections.length) {
+      blocks.push('<div class="correction-block"><div class="correction-label">纠错明细</div>' +
+        '<div class="correction-values">' + turn.corrections.map((item) =>
+          '<div class="change-line">' + escapeHtml(item.raw || "") +
+          '<span class="arrow">→</span>' + escapeHtml(item.corrected || "") +
+          '<span class="why">' + escapeHtml(item.reason || "") +
+          (item.score != null ? " · " + escapeHtml(item.score) : "") + "</span></div>"
+        ).join("") + "</div></div>");
+    }
+    if (turn.llmCorrection && Array.isArray(turn.llmCorrection.changes) && turn.llmCorrection.changes.length) {
+      blocks.push('<div class="correction-block"><div class="correction-label">LLM 纠错</div>' +
+        '<div class="correction-values">' + turn.llmCorrection.changes.map((item) =>
+          '<div class="change-line">' + escapeHtml(item.from || "") +
+          '<span class="arrow">→</span>' + escapeHtml(item.to || "") +
+          '<span class="why">' + escapeHtml(item.reason || "LLM 纠错") + "</span></div>"
+        ).join("") + "</div></div>");
+    }
+    if (!turn.rawQuestion && turn.sourceType === "manual") {
+      blocks.push('<div class="correction-block"><div class="correction-label">来源</div>' +
+        '<div class="correction-value muted">手动提问，没有 ASR 原文。</div></div>');
+    }
+    blocks.push('<div class="correction-block"><div class="correction-label">修改问题</div>' +
+      '<div class="correction-value muted">' +
+      (turn.historical ? "历史会话只读；返回实时后可修改并重新回答。" : "发现识别错词，可人工修改后用新问题重新回答。") +
+      "</div>" +
+      '<div class="editor-actions"><button type="button" class="small" id="editQuestionBtn"' +
+      (turn.historical || turn.status === "streaming" || turn.status === "pending" ? " disabled" : "") +
+      ">修改问题并重新回答</button></div></div>");
+    box.innerHTML = blocks.join("");
+    const editButton = $("#editQuestionBtn");
+    if (editButton) editButton.onclick = () => openQuestionEditor(turn);
+  }
+
+  function openQuestionEditor(turn) {
+    if (turn.historical || state.viewingSessionId) {
+      toast("历史会话只读，请先返回实时", "error");
+      return;
+    }
+    if (turn.status === "streaming" || turn.status === "pending") {
+      toast("回答还在生成中，请稍候", "error");
+      return;
+    }
+    const box = $("#correctionsBody");
+    const existing = $("#questionEditor", box);
+    if (existing) existing.remove();
+    const editor = document.createElement("div");
+    editor.className = "correction-block editor";
+    editor.id = "questionEditor";
+    editor.innerHTML =
+      '<div class="correction-label">修改问题并重新回答</div>' +
+      '<textarea id="editQuestionInput"></textarea>' +
+      '<div class="editor-actions">' +
+        '<button type="button" class="small primary" id="editQuestionSave">保存并重新回答</button>' +
+        '<button type="button" class="small" id="editQuestionCancel">取消</button>' +
+      "</div>";
+    box.appendChild(editor);
+    const input = $("#editQuestionInput", editor);
+    input.value = turn.question || "";
+    input.focus();
+    input.select();
+    $("#editQuestionCancel", editor).onclick = () => editor.remove();
+    $("#editQuestionSave", editor).onclick = async () => {
+      const corrected = input.value.trim();
+      if (!corrected) {
+        toast("修改后的问题不能为空", "error");
+        return;
+      }
+      const raw = (turn.rawQuestion || "").trim();
+      if (raw && raw !== corrected) {
+        try {
+          const saved = await postJSON("/api/glossary/corrections", {
+            raw,
+            corrected,
+          });
+          if (!saved.ok) {
+            toast(saved.detail || saved.error || "纠错记录保存失败", "error");
+            return;
+          }
+          if (saved.alias_suggestion && window.confirm(
+            "是否将“" + saved.alias_suggestion.alias + "”加入“" +
+            saved.alias_suggestion.term + "”的 aliases？"
+          )) {
+            const updated = await postJSON("/api/glossary/aliases", saved.alias_suggestion);
+            if (!updated.ok) toast(updated.detail || updated.error || "aliases 更新失败", "error");
+          }
+        } catch (error) {
+          toast("纠错记录保存失败：" + error.message, "error");
+          return;
+        }
+      }
+      turn.question = corrected;
+      turn.correctedText = corrected;
+      editor.remove();
+      updateTurn(turn);
+      await askQuestion(corrected, { replaceTurn: turn });
+    };
+  }
+
+  // ---------- 视图切换 ----------
+  function setMode(mode) {
+    state.mode = mode === "context" ? "context" : "chat";
+    localStorage.setItem(STORAGE.mode, state.mode);
+    $("#workspace").classList.toggle("context-mode", state.mode === "context");
+    $("#modeChat").classList.toggle("active", state.mode === "chat");
+    $("#modeContext").classList.toggle("active", state.mode === "context");
+    if (state.mode === "context") {
+      if (!state.selectedTurnId && state.turns.length) {
+        selectTurn(state.turns[state.turns.length - 1], false);
+      }
+      if (state.tab === "transcript" && state.followTranscript) {
+        requestAnimationFrame(() => scrollToBottom($("#transcriptList")));
+      }
+    }
+  }
+
+  function setTab(tab) {
+    const valid = ["transcript", "sources", "corrections", "sessions"];
+    state.tab = valid.includes(tab) ? tab : "transcript";
+    localStorage.setItem(STORAGE.tab, state.tab);
+    $$(".tabs button").forEach((button) => {
+      button.classList.toggle("active", button.dataset.tab === state.tab);
+    });
+    $$(".tab-panel").forEach((panel) => {
+      panel.classList.toggle("active", panel.id === "tab-" + state.tab);
+    });
+    if (state.tab === "transcript") {
+      renderTranscript();
+      if (state.followTranscript) requestAnimationFrame(() => scrollToBottom($("#transcriptList")));
+    } else if (state.tab === "sources") {
+      const turn = state.selectedTurnId ? state.byId.get(state.selectedTurnId) : null;
+      renderSources(turn);
+    } else if (state.tab === "corrections") {
+      const turn = state.selectedTurnId ? state.byId.get(state.selectedTurnId) : null;
+      renderCorrections(turn);
+    } else if (state.tab === "sessions") {
+      renderSessionList();
+    }
+  }
+
+  function updateBackLatest() {
+    const button = $("#backLatest");
+    const show = !state.atBottom;
+    button.classList.toggle("hidden", !show);
+    if (show) {
+      button.textContent = state.newWhileAway ? "↓ 回到最新 · 有新内容" : "↓ 回到最新";
+    }
+  }
+
+  function goLatest() {
+    state.atBottom = true;
+    state.newWhileAway = false;
+    // 用即时滚动，避免平滑滚动过程中的 scroll 事件把“回到最新”按钮重新显示。
+    scrollToBottom($("#timeline"), false);
+    updateBackLatest();
+    state.followTranscript = true;
+    scrollToBottom($("#transcriptList"));
+  }
+
+  // ---------- 输入 ----------
+  function autoResizeComposer() {
+    const input = $("#manual");
+    input.style.height = "auto";
+    input.style.height = Math.min(150, Math.max(42, input.scrollHeight)) + "px";
+  }
+
+  async function sendManual() {
+    const input = $("#manual");
+    const text = input.value.trim();
+    if (!text) return;
+    if (state.viewingSessionId) {
+      toast("正在查看历史会话，请先点“返回实时”", "error");
+      return;
+    }
+    input.value = "";
+    autoResizeComposer();
+    await askQuestion(text);
+  }
+
+  // ---------- 初始化 ----------
+  async function init() {
+    setMode(state.mode);
+    setTab(state.tab);
+    $("#timeline").addEventListener("scroll", () => {
+      state.atBottom = nearBottom($("#timeline"));
+      if (state.atBottom) state.newWhileAway = false;
+      updateBackLatest();
+    }, { passive: true });
+    $("#transcriptList").addEventListener("scroll", () => {
+      const list = $("#transcriptList");
+      state.followTranscript = nearBottom(list);
+      $("#transcriptFollow").classList.toggle("hidden", state.followTranscript);
+    }, { passive: true });
+
+    $("#start").onclick = startCapture;
+    $("#stop").onclick = stopCapture;
+    $("#pause").onclick = togglePause;
+    $("#clear").onclick = clearContext;
+    $("#send").onclick = sendManual;
+    $("#cancelAnswer").onclick = cancelActive;
+    $("#manual").addEventListener("input", autoResizeComposer);
+    $("#manual").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendManual();
+      }
+    });
+    $("#modeChat").onclick = () => setMode("chat");
+    $("#modeContext").onclick = () => setMode("context");
+    $("#closeContext").onclick = () => setMode("chat");
+    $("#sidebarBackdrop").onclick = () => setMode("chat");
+    $("#backLatest").onclick = goLatest;
+    $("#transcriptFollow").onclick = () => {
+      state.followTranscript = true;
+      scrollToBottom($("#transcriptList"), true);
+      $("#transcriptFollow").classList.add("hidden");
+    };
+    $$(".tabs button").forEach((button) => {
+      button.onclick = () => setTab(button.dataset.tab);
+    });
+    $("#sessionSelect").onchange = (event) => {
+      const value = event.target.value;
+      if (value === "__live__") returnToLive();
+      else if (value === "__new__") newSession();
+      else loadHistorySession(value);
+    };
+    $("#newSession").onclick = newSession;
+    $("#newSession2").onclick = newSession;
+    $("#deleteSession").onclick = deleteViewingSession;
+    $("#returnLive").onclick = returnToLive;
+    $("#knowledge").onchange = async (event) => {
+      try {
+        const result = await postJSON("/api/knowledge/switch", { path: event.target.value });
+        if (!result.ok) toast(result.detail || result.error || "知识库切换失败", "error");
+        else toast("知识库已切换：" + (result.chunks || 0) + " 段", "ok");
+      } catch (error) {
+        toast("知识库切换失败：" + error.message, "error");
+      }
+    };
+
+    try {
+      const status = await getJSON("/api/status");
+      applyStatus(status);
+      if (!status.llm_provider) setTimeout(refreshStatus, 1200);
+      await loadSessionList({ silent: true });
+      const activeStatusSession = (status && (status.capture === "capturing" || status.capture === "starting") && status.session_id)
+        ? status.session_id
+        : "";
+      const known = (value) => !!value &&
+        state.historySessions.some((item) => item.session_id === value);
+      const stored = localStorage.getItem(STORAGE.session) || "";
+      let sessionId = activeStatusSession || "";
+      if (!sessionId && known(stored)) sessionId = stored;
+      if (!sessionId && status && known(status.session_id)) sessionId = status.session_id;
+      if (!sessionId) sessionId = newId();
+      state.sessionId = sessionId;
+      localStorage.setItem(STORAGE.session, sessionId);
+      const exists = state.historySessions.some((item) => item.session_id === sessionId);
+      if (exists) {
+        await loadLiveSession(sessionId, { silent: true });
+      } else {
+        clearTimeline();
+        state.transcript = [];
+        renderTranscript();
+        renderSources(null);
+        renderCorrections(null);
+      }
+    } catch (error) {
+      toast("连接本地实时服务失败：" + error.message, "error");
+      clearTimeline();
+      renderTranscript();
+    }
+
+    try {
+      const knowledge = await getJSON("/api/knowledge");
+      if (knowledge && Array.isArray(knowledge.items) && knowledge.items.length) {
+        const select = $("#knowledge");
+        select.innerHTML = "";
+        for (const item of knowledge.items) {
+          const option = document.createElement("option");
+          option.value = item.path;
+          option.textContent = item.name;
+          select.appendChild(option);
+        }
+      }
+    } catch (e) { /* 知识库列表失败不阻塞主界面 */ }
+
+    connectEvents();
+    autoResizeComposer();
+    $("#manual").focus();
+  }
+
+  init();
+})();
 </script>
 </body>
 </html>

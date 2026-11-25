@@ -29,6 +29,27 @@ class TestEmbeddedRealtime(unittest.TestCase):
             {"ok": True, "url": "http://127.0.0.1:12345/"},
         )
 
+    def test_api_exposes_frameless_window_controls(self):
+        for name in (
+            "toggle_maximize_window", "close_window", "resize_window",
+            "_apply_window_maximized_state",
+        ):
+            self.assertTrue(callable(getattr(Api, name, None)), name)
+        source = (ROOT / "面试猴.py").read_text(encoding="utf-8")
+        for marker in (
+            "transparent=True",
+            "frameless=True",
+            "easy_drag=False",
+            'DRAG_REGION_DIRECT_TARGET_ONLY"] = True',
+            "events.maximized",
+            "events.restored",
+        ):
+            self.assertIn(marker, source)
+        html = (ROOT / "renderer" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('href="theme-glass.css"', html)
+        self.assertIn('id="resizeGrip"', html)
+        self.assertTrue((ROOT / "renderer" / "theme-glass.css").is_file())
+
     def test_spec_keeps_original_desktop_entry_and_bundles_both_pages(self):
         spec = (ROOT / "面试猴.spec").read_text(encoding="utf-8")
         self.assertIn('project_dir / "面试猴.py"', spec)

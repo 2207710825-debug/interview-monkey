@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 from typing import Any, AsyncIterator, Mapping, Sequence
+from urllib.parse import urlparse
 
 
 class LLMProviderError(RuntimeError):
@@ -30,6 +31,7 @@ class OpenAICompatLLMProvider:
         temperature: float = 0.2,
         timeout_seconds: float = 45.0,
         max_retries: int = 2,
+        trust_env: bool | None = None,
     ):
         if not 0.0 <= temperature <= 0.3:
             raise ValueError("实时问答 temperature 必须在 0~0.3")
@@ -39,6 +41,13 @@ class OpenAICompatLLMProvider:
         self.temperature = temperature
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
+        # 本机 Ollama/网关绝不能走系统代理：Windows 的 httpx 会读取注册表代理，
+        # 127.0.0.1 也可能被转发到 10808，导致 503 或 4 秒以上的额外延迟。
+        host = urlparse(self.base_url).hostname
+        self.trust_env = (
+            host not in {"127.0.0.1", "localhost", "::1"}
+            if trust_env is None else trust_env
+        )
         self._client = None
 
     async def _get_client(self):
@@ -48,7 +57,9 @@ class OpenAICompatLLMProvider:
             if self.api_key:
                 headers["Authorization"] = f"Bearer {self.api_key}"
             timeout = httpx.Timeout(self.timeout_seconds, connect=min(10.0, self.timeout_seconds))
-            self._client = httpx.AsyncClient(http2=True, headers=headers, timeout=timeout)
+            self._client = httpx.AsyncClient(
+                http2=True, headers=headers, timeout=timeout, trust_env=self.trust_env,
+            )
         return self._client
 
     @staticmethod

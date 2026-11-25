@@ -11,6 +11,7 @@ import secrets
 import time
 import uuid
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -172,6 +173,8 @@ class FixtureCaptureRuntime:
         self.bus = AsyncEventBus(queue_size=256)
         self.state = "stopped"
         self.last_error = ""
+        self.session_id = ""
+        self.started_at = ""
         self._task: asyncio.Task | None = None
 
     def status(self) -> dict[str, Any]:
@@ -181,6 +184,8 @@ class FixtureCaptureRuntime:
             "active_sources": 0,
             "audio_stats": [],
             "error": self.last_error,
+            "session_id": self.session_id,
+            "capture_started_at": self.started_at,
             "mock": True,
         }
 
@@ -195,6 +200,8 @@ class FixtureCaptureRuntime:
             return {"ok": True, **self.status()}
         self.state = "capturing"
         self.last_error = ""
+        self.session_id = str(session_id or "default")
+        self.started_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
         await self._publish("status", self.status())
         self._task = asyncio.create_task(self._publish_fixtures(session_id))
         return {"ok": True, **self.status()}
@@ -213,11 +220,16 @@ class FixtureCaptureRuntime:
                 "raw_text": text,
                 "corrected": False,
             })
+        first_text = str((self.fixtures.get("transcript") or [""])[0])
         await self._publish("question_decision", {
             "is_question": True,
             "confidence": 1.0,
             "normalized_query": self.fixtures["question"],
             "reason": "fixture",
+            "utterance_id": f"mock-{session_id}-0",
+            "start_ms": 0,
+            "end_ms": 900,
+            "text": first_text,
         })
         async for event in self.answer_service.stream_answer(
             self.fixtures["question"], session_id=session_id,

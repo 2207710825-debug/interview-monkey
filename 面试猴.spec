@@ -16,6 +16,7 @@ datas = [
     (str(project_dir / "config"), "config"),
     (str(project_dir / "prompts"), "prompts"),
     (str(project_dir / "web"), "web"),
+    (str(project_dir / "fixtures" / "realtime_mock.json"), "fixtures"),
     (str(project_dir / "engine" / "asr_models"), "engine/asr_models"),
     (str(project_dir / "engine" / "asr_models_zh_en"), "engine/asr_models_zh_en"),
     (str(project_dir / "engine" / "asr_models_sense"), "engine/asr_models_sense"),

@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import asyncio
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 from ..asr.hotwords import load_hotwords
 from ..asr.postprocess import PostprocessingASRProvider, TranscriptPostprocessor
 from ..asr.providers import JsonWebSocketASRProvider, LocalSherpaASRProvider
+from ..asr.termbank import merge_hotwords
 from ..capture.sources import PortAudioInputSource, WindowsLoopbackAudioSource
 from ..config import RealtimeConfig
 from ..contracts import Channel
@@ -18,10 +20,20 @@ from ..vad.adaptive import AdaptiveVadSegmenter
 
 
 class CaptureRuntime:
-    def __init__(self, cfg: RealtimeConfig, answer_service, project_root: str | Path, qa_logger=None):
+    def __init__(
+        self,
+        cfg: RealtimeConfig,
+        answer_service,
+        project_root: str | Path,
+        qa_logger=None,
+        transcript_logger=None,
+        extra_hotwords: tuple = (),
+    ):
         self.cfg = cfg
         self.answer_service = answer_service
         self.qa_logger = qa_logger
+        self.transcript_logger = transcript_logger
+        self.extra_hotwords = tuple(extra_hotwords)
         self.project_root = Path(project_root)
         self.bus = AsyncEventBus(queue_size=256)
         self.tasks: list[asyncio.Task] = []
@@ -30,6 +42,8 @@ class CaptureRuntime:
         self._asr_cache: dict[Channel, object] = {}
         self.state = "stopped"
         self.last_error = ""
+        self.session_id = ""
+        self.started_at = ""
 
     def status(self) -> dict[str, object]:
         audio_stats = []
@@ -49,13 +63,16 @@ class CaptureRuntime:
             "active_sources": len(self.sources),
             "audio_stats": audio_stats,
             "error": self.last_error,
+            "session_id": self.session_id,
+            "capture_started_at": self.started_at,
         }
 
     def _hotwords(self):
         path = Path(self.cfg.asr.hotwords_path)
         if not path.is_absolute():
             path = self.project_root / path
-        return load_hotwords(path) if path.is_file() else []
+        manual = load_hotwords(path) if path.is_file() else []
+        return list(merge_hotwords(manual, self.extra_hotwords))
 
     def reload_hotwords(self) -> int:
         """人工确认 alias 后立即刷新已加载 provider 的文本纠偏表。"""
@@ -120,6 +137,7 @@ class CaptureRuntime:
         return RealtimePipeline(
             vad, asr, detector, self.answer_service, self.bus,
             qa_logger=self.qa_logger,
+            transcript_logger=self.transcript_logger,
         )
 
     async def start(self, mode: str = "loopback", device=None, session_id: str = "default") -> dict[str, object]:
@@ -131,6 +149,8 @@ class CaptureRuntime:
         self.state = "starting"
         self.last_error = ""
         self.last_audio_stats = []
+        self.session_id = str(session_id or "default")
+        self.started_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
         try:
             if mode in {"loopback", "both"}:
                 if os.name != "nt":

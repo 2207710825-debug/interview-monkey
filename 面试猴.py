@@ -132,6 +132,7 @@ class Api:
         self._stream_lock = threading.Lock()
         self._stream_seq = 0        # 每次提问自增，前端据此丢弃过期片段
         self._boot_state = {"ready": False, "note": ""}
+        self._window_maximized = False
 
         # ---- 持久化存储（sqlite3，WAL 模式）----
         from engine import store as store_mod
@@ -518,6 +519,61 @@ class Api:
         segs = store_mod.list_segments(self._db, session_id)
         qas = store_mod.list_qa(self._db, session_id)
         return {"session_id": session_id, "segments": segs, "qa": qas}
+
+    def get_practice_bank(self):
+        """返回本机扩展练习题库（牛客 + 微信 + PDF/XMind），供“练习题库”页合并。
+
+        题库只存在 %APPDATA%\\InterviewMonkey\\knowledge\\*_bank.json，
+        不打包进 exe，也不进入项目仓库。文件不存在时返回空列表；
+        某个文件损坏时跳过它并返回 errors，其他题库仍可用。
+        """
+        directory = os.path.join(data_dir(), "knowledge")
+        sources = (
+            ("nowcoder_bank.json", "Nowcoder", "牛客网"),
+            ("wechat_bank.json", "微信资料", "微信资料"),
+            ("study_bank.json", "资料", "资料"),
+        )
+        items = []
+        seen = set()
+        errors = []
+        for filename, default_cat, default_from in sources:
+            path = os.path.join(directory, filename)
+            if not os.path.isfile(path):
+                continue
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception as e:
+                errors.append("%s: %s" % (filename, e))
+                continue
+            if isinstance(data, dict):
+                data = data.get("items", [])
+            if not isinstance(data, list):
+                errors.append("%s: 题库格式错误" % filename)
+                continue
+            for row in data:
+                if not isinstance(row, dict):
+                    continue
+                q = str(row.get("q") or "").strip()
+                if not q:
+                    continue
+                key = "".join(q.split())
+                if key in seen:
+                    continue
+                seen.add(key)
+                ref = row.get("ref") or []
+                if not isinstance(ref, list):
+                    ref = [str(ref)]
+                items.append({
+                    "cat": str(row.get("cat") or default_cat),
+                    "from": str(row.get("from") or default_from),
+                    "q": q,
+                    "ref": [str(item) for item in ref if str(item).strip()],
+                })
+        result = {"ok": True, "items": items, "count": len(items)}
+        if errors:
+            result["errors"] = errors
+        return result
 
     def evaluate_answer(self, question, ref_points, answer):
         """面试陪练：回答评分 + 优化建议 + 参考答案。"""
@@ -962,12 +1018,74 @@ class Api:
         windows[0].minimize()
         return True
 
+    def _apply_window_maximized_state(self, maximized):
+        """把真实窗口状态同步回页面，供自绘标题栏使用。"""
+        self._window_maximized = bool(maximized)
+        windows = webview.windows
+        if not windows:
+            return
+        state = "true" if self._window_maximized else "false"
+        icon = "'❐'" if self._window_maximized else "'□'"
+        script = (
+            "document.body.classList.toggle('maximized', %s);"
+            "(()=>{const b=document.querySelector('#winMax');"
+            "if(b)b.textContent=%s;})();" % (state, icon)
+        )
+        try:
+            windows[0].evaluate_js(script)
+        except Exception:
+            pass
+
     def restore_window(self):
         """恢复主窗口，供顶部快捷键调用。"""
         windows = webview.windows
         if not windows:
             return False
         windows[0].restore()
+        self._apply_window_maximized_state(False)
+        return True
+
+    def resize_window(self, width, height):
+        """右下角拖拽缩放：JS 传入目标尺寸，这里做最小尺寸保护。"""
+        windows = webview.windows
+        if not windows:
+            return {"ok": False}
+        try:
+            target_w = max(920, min(4096, int(float(width))))
+            target_h = max(600, min(3072, int(float(height))))
+            windows[0].resize(target_w, target_h)
+            return {"ok": True, "width": target_w, "height": target_h}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def toggle_maximize_window(self):
+        """最大化 / 还原无边框主窗口。"""
+        windows = webview.windows
+        if not windows:
+            return {"ok": False, "maximized": False}
+        window = windows[0]
+        try:
+            target = not self._window_maximized
+            if target:
+                window.maximize()
+            else:
+                window.restore()
+            self._window_maximized = target
+            return {"ok": True, "maximized": target}
+        except Exception as exc:
+            self._window_maximized = bool(getattr(window, "maximized", False))
+            return {
+                "ok": False,
+                "maximized": self._window_maximized,
+                "error": str(exc),
+            }
+
+    def close_window(self):
+        """关闭主窗口；无边框窗口需要自绘关闭按钮。"""
+        windows = webview.windows
+        if not windows:
+            return False
+        windows[0].destroy()
         return True
 
 
@@ -1122,6 +1240,10 @@ def main():
     api.preheat_asr()
     api.preheat_llm()
     window_title = "面试猴 · 会议实时总结助手"
+    # 无边框透明窗口靠页面自己画标题栏；只让明确标注的拖拽区移动窗口，
+    # 避免拖动滑块/按钮时误触发窗口移动。
+    webview.settings["DRAG_REGION_SELECTOR"] = ".pywebview-drag-region"
+    webview.settings["DRAG_REGION_DIRECT_TARGET_ONLY"] = True
     main_window = webview.create_window(
         window_title,
         html,
@@ -1129,14 +1251,26 @@ def main():
         width=1160,
         height=780,
         min_size=(920, 600),
-        background_color="#f3efe8",
+        background_color="#000000",
+        transparent=True,
+        frameless=True,
+        easy_drag=False,
     )
+    main_window.events.maximized += lambda: api._apply_window_maximized_state(True)
+    main_window.events.restored += lambda: api._apply_window_maximized_state(False)
     window_hotkeys = GlobalWindowHotkeys(main_window, window_title, logger=_log)
     main_window.events.closed += window_hotkeys.stop
     window_hotkeys.start()
     # before_show 阶段先保护再显示；恢复、跨屏和句柄重建后由后台巡检重申。
     window_security = WindowSecurityGuard(window_title, logger=_log, audit_interval=2.0)
     window_security.bind_pywebview(main_window)
+    # WebView2 顶层窗口没有可靠的原生逐像素透明；采样窗口背后的桌面作为
+    # 页面背景，既去掉不透明黑底，也不会把应用自身拍进背景。
+    from engine.desktop_backdrop import DesktopBackdrop
+
+    desktop_backdrop = DesktopBackdrop(main_window, window_security, logger=_log)
+    main_window.events.loaded += lambda: desktop_backdrop.start()
+    main_window.events.closed += desktop_backdrop.stop
     # storage_path 让 localStorage 持久化，保证记录跨会话保留。
     # pywebview 6 默认用 http://127.0.0.1 提供页面（是安全上下文），麦克风因此可用；
     # 这里不指定端口，避免换端口导致 localStorage 源变化、历史记录"消失"。

@@ -184,13 +184,14 @@ class TestRealtimeRag(unittest.IsolatedAsyncioTestCase):
         messages = manager.build(
             "先验框机制是什么？",
             [],
-            budget_tokens=900,
+            budget_tokens=1200,
             glossary_candidates=[{"raw": "先验狂", "corrected": "先验框", "score": 0.73}],
         )
         self.assertIn("ASR 词库候选", messages[1]["content"])
         self.assertIn("先验狂 → 先验框", messages[1]["content"])
         self.assertIn("asr", messages[0]["content"].lower())
         self.assertIn("通用知识", messages[0]["content"])
+        self.assertIn("补充证据", messages[0]["content"])
 
 
 if __name__ == "__main__":
