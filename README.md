@@ -1,188 +1,197 @@
-# 面试猴 · 全语音零门槛随身助手
+# 面试猴 · 本地优先的会议纪要 / 实时问答 / 面试陪练
 
-## Git 克隆与模型文件
+> **使用边界**：本项目只用于个人学习、会议记录和面试**前**练习。正式面试、考试、测评、背调或任何需要独立完成的场景中请勿实时使用。完整条款见 [DISCLAIMER.md](DISCLAIMER.md)。
 
-本仓库使用 Git LFS 管理 sherpa-onnx 模型文件。克隆后先安装 Git LFS，再拉取模型对象：
+面试猴是一个 Windows 桌面应用：本机采集会议声音或麦克风，本地完成语音识别、知识库检索和实时问答；同时提供面试陪练、练习题库和历史复盘。默认数据全部留在本机，云端只在你明确选择在线大模型时接收**问题文本和检索上下文**，不上传音频。
+
+技术栈：**pywebview + WebView2 + Python/FastAPI + sherpa-onnx + 本地 RAG + SQLite/JSONL**。
+
+---
+
+## 功能
+
+- **实时语音转写**：WASAPI 系统回环 / 麦克风采集，WebRTC VAD 分段，sherpa-onnx 流式识别 + 第二遍 SenseVoice 校准；支持中英混合技术词热词。
+- **实时问答工作台**：问题自动识别、Q&A 时间线、上下文侧栏、来源引用、转写纠错、会话历史、手动提问、停止生成/重新回答。
+- **本地知识库**：个人笔记、牛客题、微信资料、XMind 思维导图、PDF 资料均可导入；BM25 + 向量混合检索，只在本机建立索引。
+- **练习题库**：内置题库 + 本地导入题库；支持语音或文本作答、评分、参考答案、练习记录。
+- **会议纪要**：关键词、数字/金额/时间、结论、待办自动提取，可复制/下载。
+- **桌面体验**：无边框深色玻璃界面、可调整背景不透明度、右下角缩放、窗口置顶、全局快捷键、摄像头手势控制。
+- **本地优先**：音频、转写、索引和配置都在本机；可接本地 Ollama，也可显式选择 DeepSeek / 智谱等在线模型。
+
+---
+
+## 快速开始（直接使用）
+
+1. 打开 [Releases](https://github.com/2207710825-debug/interview-monkey/releases/latest)，下载 `InterviewMonkey-v1.2.0.exe`（或对应最新版本）。
+2. 系统要求：Windows 10/11 x64，已安装 **Microsoft Edge WebView2 Runtime**（Win11 通常自带）。
+3. 双击运行。首次使用在「模型设置」中填写 DeepSeek Key，或启动本地 Ollama 后选择 Ollama；不填 Key 也能使用本地规则兜底和练习题库。
+4. 需要实时问答时，在「智能问答」页选择音源（系统声音 / 麦克风），点击开始监听。
+
+exe 已包含应用代码、两套本地 ASR 模型和界面资源；**不包含**你本机的知识库、题库、会议记录和 API Key。
+
+本机数据目录：
+
+```text
+%APPDATA%\InterviewMonkey\
+├─ config.json           # 模型/检索设置（API Key 只存本机）
+├─ knowledge\            # notes.jsonl、nowcoder.jsonl、wechat_notes.jsonl、study_notes.jsonl…
+├─ qa.jsonl              # 实时问答历史
+├─ transcripts.jsonl     # 转写历史
+└─ app.log               # 诊断日志
+```
+
+删除 `config.json` 等于恢复模型设置；删除 `knowledge` 下的导入文件即可移除对应知识库/题库。
+
+---
+
+## 知识库与题库导入
+
+导入完全在本机执行，数据不会上传，也不在仓库或 exe 中。
+
+```bash
+# 牛客专项练习导出文件 → 知识库 + 题库
+python scripts/import_nowcoder.py --raw-dir "E:\面试猴\import\nowcoder_raw"
+
+# 微信 Markdown 笔记 → 知识库 + 题库
+python scripts/import_wechat_notes.py \
+  --unet "D:\...\深度学习与UNet学习笔记.md" \
+  --qa "D:\...\面试高频题_答题骨架_深度学习基础_修订版.md"
+
+# XMind + 两份 PDF → 知识库 + 题库
+python scripts/import_study_pack.py \
+  --xmind "E:\download\面试涉及的知识点.xmind" \
+  --pdf1 "E:\download\01 神经网络(带目录-水印).pdf" \
+  --pdf2 "E:\download\02 DeekLearning面试问题_精简版.pdf"
+```
+
+输出文件统一写到 `%APPDATA%\InterviewMonkey\knowledge`，应用启动时自动加载：
+
+- `notes.jsonl`：个人笔记索引
+- `nowcoder.jsonl` / `nowcoder_bank.json`：牛客题
+- `wechat_notes.jsonl` / `wechat_bank.json`：微信 Markdown 资料
+- `study_notes.jsonl` / `study_bank.json`：XMind / PDF 学习资料
+- `*_import.json`：导入清单
+
+导入脚本只读取你提供的文件，不下载在线题库，也不会把题目内容写入项目仓库。
+
+---
+
+## 架构
+
+```text
+renderer/index.html (pywebview/WebView2)
+        │ js_api + HTTP + SSE
+        ▼
+127.0.0.1:<随机端口> FastAPI（只监听回环）
+        │
+        ├─ WASAPI loopback / 麦克风 → WebRTC VAD → sherpa-onnx / SenseVoice
+        ├─ 问题检测 → 术语表 → BM25 + 向量 RRF → 来源片段
+        ├─ 本地 Ollama / 在线 LLM（仅文本）→ SSE token 流
+        ├─ qa.jsonl / transcripts.jsonl / SQLite 历史
+        └─ 练习题库：内置 + 本地导入 + 语音/文本作答评分
+```
+
+关键目录：
+
+```text
+面试猴-app/
+├─ 面试猴.py                 # 桌面入口、窗口、js_api
+├─ realtime_server.py        # 独立/内嵌实时服务入口
+├─ engine/
+│  ├─ realtime/              # 音频采集、VAD/ASR、RAG、编排、历史
+│  ├─ desktop_backdrop.py    # 窗口背后桌面采样（玻璃背景）
+│  ├─ window_security.py     # 窗口捕获保护
+│  ├─ store.py               # SQLite 本地存储
+│  └─ asr_models*/           # 本地 ASR 模型
+├─ renderer/                 # 主界面、玻璃主题、手势控制
+├─ web/realtime.html         # 实时问答工作台
+├─ scripts/                  # 本地资料导入脚本
+├─ tests/                    # pytest 回归
+└─ 面试猴.spec               # PyInstaller 单文件打包配置
+```
+
+---
+
+## 源码运行
+
+需要 Python 3.12（当前打包环境），Windows 10/11 x64。
 
 ```bash
 git lfs install
 git clone https://github.com/2207710825-debug/interview-monkey.git
 cd interview-monkey
-git lfs pull
+
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements-pack.txt
+.venv\Scripts\python.exe -m pip install -r requirements-realtime.txt
+
+.venv\Scripts\python.exe 面试猴.py
 ```
 
-没有 Git LFS 时，模型路径会只有指针文本，离线 ASR 无法启动。
-
-全语音 · 零门槛 · 实时转写 + 流式问答，配置一次就不用再填，数据只存本地。
-
-> 实际技术栈：**pywebview + WebView2 + Python 后端**（早期 1.0.0 为 Electron 版，1.1 起迁移，原因见下方第二节）。
-
-## 一、先逆向 → 再正向（本项目的由来）
-
-本项目通过对「面试狗」的 REA 逆向分析，摸清了它的三层架构，然后正向复用了这套**通用技术骨架**，实现功能正当的「面试猴」：
-
-| 逆向学到的技术 | 面试猴中的正向复用 |
-|---|---|
-| 主进程负责窗口 + IPC | pywebview 主窗口 + `js_api` 暴露受控方法 |
-| preload 用 contextBridge 暴露受控 API | `Api` 类只暴露白名单方法，渲染端拿不到文件系统 |
-| 渲染端单页（原生 JS，零依赖） | `renderer/index.html` 单页 |
-| 音频采集 → 实时转写 → 分析管线 | getUserMedia 采 PCM → sherpa-onnx 本地识别 → 规则/LLM 分析 |
-| 本地持久化（面试狗用 SQLite） | 配置存 JSON（原子写入）、会话存本地文件 |
-
-## 二、目录结构
-
-```
-面试猴-app/
-├─ 面试猴.py                # 入口：窗口 + Api（js_api）+ 流式推送
-├─ engine/
-│  ├─ config_store.py      # 配置持久化（原子写入 / schema 版本 / 脱敏）
-│  ├─ llm.py               # 三种后端 + 流式（Ollama NDJSON / OpenAI SSE / 规则）
-│  ├─ assistant.py         # 编排：检索 → Prompt → 流式推理 → 三级降级
-│  ├─ asr.py               # sherpa-onnx 本地语音识别（VAD 断句 0.8s 可调）
-│  └─ retriever.py         # 本地知识库检索
-├─ renderer/index.html     # 界面：渲染 + VAD 门槛 + 流式打字机
-├─ test_config_persist.py  # 配置持久化 7 场景回归
-└─ test_stream_e2e.py      # 流式端到端回归（含假 Ollama 服务）
-```
-
-## 三、两个核心体验的设计
-
-### 3.1 配置一次，以后都不用填
-
-```
-启动 → ConfigStore.load() → 合并默认值 → bootstrap() 探测
-                                            ├─ 有 Key → 直接可用
-                                            ├─ 检测到 Ollama 且选 auto → 自动切本地
-                                            └─ 都没有 → 界面提示"去填 Key 或启动 Ollama"
-```
-
-- **原子写入**：先写同目录临时文件再 `os.replace`，中途断电也不会留下半个 JSON
-- **合并式保存**：`save_config` 只传要改的字段，空 `api_key` 表示"沿用旧的"，改检索条数不会把 Key 抹掉
-- **Key 明文不出后端**：前端只看到 `has_key: true` + `key_masked: "sk-a****wxyz"`，输入框 hint 就是这个脱敏串
-- **向前兼容**：配置带 `version` 字段，缺字段一律补默认值，老配置文件可直接用
-
-### 3.2 张嘴就有字（流式）
-
-```
-语音定稿 → 四道 VAD 门槛 → aiDispatch → Api.ask_stream
-                                            ↓ 后台线程
-                         检索 → Prompt → 后端流式生成
-                                            ↓ evaluate_js 反向推送
-        __onChunk(sid, piece) × N → requestAnimationFrame 合帧 → 首行关键词高亮
-                                            ↓
-                     __onDone / __onSkip / __onError → aiBusy=false → 发排队那句
-```
-
-- `js_api` 是请求-响应模型，等结果就是全量等待。这里改用 `window.evaluate_js()` 从 Python 线程反向推增量，渲染端不等返回
-- 每轮一个自增 `stream_id`，回调里对不上就丢弃，实现"新的来了旧的自动作废"
-- Prompt 强制首行 3 个关键词（≤15 字），一出现就用 19px 加粗高亮，视觉上"立刻有反应"
-- 三级降级：主后端失败 → 本地 Ollama → 规则兜底，链路上任何一环挂掉用户都能拿到话
-- `[SKIP]` 判定缓冲前 6 字符，标记本身不会闪到界面上
-
-## 四、功能
-
-- 🎙 实时录音转文字（本地 sherpa-onnx，离线可用；浏览器 Web Speech 兜底）
-- ⚡ 流式问答，首字约 5ms（本地假服务实测，见 CHANGELOG）
-- 🔑 实时提取：高频关键词、数字/金额/时间、已确认结论、待办事项
-- 📋 自动生成纪要，可复制 / 下载
-- 💾 配置与会话全部本地存储，不联网也不丢
-- 🛡 Windows 窗口捕获保护：启动前设置 Display Affinity，恢复、跨屏和句柄重建后自动巡检重申
-
-> 窗口捕获保护覆盖 Windows 支持的公共截图/录屏路径，但不是 DRM，不能阻止相机拍摄、
-> 内核级采集或进程内恶意代码。运行日志中的 `[DLP]` 记录包含实际 HWND、回查值和错误码。
-
-## 五、运行
-
-### 5.1 装依赖
+开发时也可以单独启动实时服务：
 
 ```bash
-pip install pywebview            # 窗口壳（Windows 上自动用 WebView2）
-pip install sherpa-onnx sounddevice numpy   # 语音识别 + 麦克风采集
+.venv\Scripts\python.exe realtime_server.py
+# 或使用 fixtures，不调用真实 ASR/RAG/LLM
+.venv\Scripts\python.exe realtime_server.py --mock
 ```
 
-> 只在还没装过时执行。`pywebview` 是必需依赖，缺了会直接 `ModuleNotFoundError: No module named 'pywebview'`。
+模型由 Git LFS 管理，克隆后务必执行 `git lfs pull`；没有模型时离线 ASR 无法启动。
 
-### 5.2 启动
+---
+
+## 测试
 
 ```bash
-cd 面试猴-app
-python 面试猴.py
+.venv-pack\Scripts\python.exe -m pytest tests -q
 ```
 
-首次运行：点右上「模型设置」，填 DeepSeek Key（或启动本地 Ollama 后直接选 ollama）→ 保存 → 下次打开已就绪。
+当前回归结果：**178 passed，177 subtests passed**。覆盖实时历史/SSE API、知识库加载、题库合并、术语抽取、检索、导入解析和窗口控制。
 
-配置文件位置：`%APPDATA%\InterviewMonkey\config.json`（界面里的「模型设置 → 重新检测」下方会显示实际路径）。删掉它就等于恢复出厂设置。
+---
 
-可选环境变量：
-
-| 变量 | 默认 | 说明 |
-|---|---|---|
-| `OLLAMA_URL` | `http://localhost:11434` | 本地 Ollama 地址 |
-| `VAD_SILENCE` | `0.8` | 断句静音阈值（秒），越小越灵敏、也越容易被环境噪音切碎 |
-
-### 5.3 打包 Windows 单文件版
-
-项目使用隔离虚拟环境和锁定依赖打包，避免把系统 Python 中的 PyTorch、PyQt 等无关组件带入 EXE：
+## 打包 Windows 单文件版
 
 ```powershell
 D:\ruanjian\python\python.exe -m venv --clear .venv-pack
 .\.venv-pack\Scripts\python.exe -m pip install -r requirements-pack.txt
 .\.venv-pack\Scripts\python.exe -m pip install -r requirements-realtime.txt
-.\.venv-pack\Scripts\pyinstaller.exe --noconfirm --clean --distpath dist-realtime --workpath build-realtime 面试猴.spec
+.\.venv-pack\Scripts\pyinstaller.exe --noconfirm --clean `
+  --distpath dist-realtime --workpath build-realtime 面试猴.spec
 ```
 
-构建结果位于 `dist-realtime\面试猴.exe`。冻结后的程序仍以原 `renderer/index.html` 作为主界面，并在“智能问答”模块内嵌三栏实时工作台；后台 FastAPI 只监听随机回环端口。`面试猴.spec` 会携带原界面、配置、提示词、实时网页、知识库、两套 ASR 模型及所需本机运行库。
+产物为 `dist-realtime\面试猴.exe`。当前版本 exe 约 450 MB，包含本地 ASR 模型；GitHub 仓库只保存源码，exe 通过 Release 资产分发，不进入 Git 历史。
 
-跑回归：
+---
 
-```bash
-python test_config_persist.py    # 配置持久化 7 场景
-python test_stream_e2e.py        # 流式端到端（自带假 Ollama）
-```
+## 隐私与安全说明
 
-### 5.4 窗口起不来怎么查
+- 音频采集、VAD、本地 ASR、知识库检索和练习记录默认都在本机完成。
+- 选择在线 LLM 时，发送的是**问题文本、检索上下文和必要提示词**；音频不会上传。API Key 只保存在 `%APPDATA%\InterviewMonkey\config.json`。
+- 玻璃背景采样只在本进程内存和页面 DOM 中使用，不落盘、不上传；它利用窗口捕获保护采样窗口**背后**的桌面。
+- 窗口捕获保护（`WDA_EXCLUDEFROMCAPTURE`）用于避免会议窗口被普通截图/录屏误采集，不是 DRM，也不能阻止相机拍摄、内核级采集或恶意进程；不得用它规避监考、录屏审计或单位规定。
+- 导入的第三方题库/PDF 只保存在本机，使用者应自行确认拥有相应使用权，不得再分发。
 
-桌面应用最怕「双击没反应」。程序启动前会自检 WebView2 运行时，起不来时弹框说明；如果连弹框都没有，按下面两步定位。
+---
 
-```bash
-python tools/wv2_version_check.py   # 系统里认到哪个 WebView2 版本
-python tools/wv2_env_check.py       # 用原生 COM 创建环境，成功=运行时没问题
-```
+## 免责声明
 
-两个脚本的判读方式：
+本项目是个人学习与效率工具，**不提供也不鼓励**任何形式的面试作弊、考试作弊、测评规避、监考规避、保密信息窃取或违反雇主/客户规定的行为。正式面试、考试和需要独立完成的评估中请勿实时使用。
 
-- `wv2_version_check.py` 打印出版本号（如 `157.0.4341.42`）→ 运行时**已装且健康**
-- `wv2_env_check.py` 打印 `>>> 原生 API 创建环境成功` → 运行时**完全正常**
+使用者应自行确保录音/转写已取得必要同意，并遵守当地法律、会议参与者约定、平台条款和单位制度。AI 输出可能错误或过时，重要决策必须人工核实。项目按“现状”提供，不附带任何明示或暗示担保；作者不对使用本项目造成的损失、处罚、数据泄露或第三方索赔承担责任。
 
-如果上面两项都通过、但窗口仍然起不来，那就是 **pywebview 的 .NET 包装层**与当前 Windows 版本不兼容，不是本项目代码的问题。已在 Windows 11 Build 26200 + pywebview 6.2.1 上复现过：`webview.start()` 不抛错、窗口不出现，.NET 侧报 `Couldn't find a compatible Webview2 Runtime (0x80070002)`，而同一台机器用原生 COM API 创建环境却成功（换 SDK 到 1.0.4314.35 也无效）。
+完整条款请阅读 [DISCLAIMER.md](DISCLAIMER.md)。
 
-这种情况下依次尝试：
+---
 
-1. 「设置 → 应用」里修复 `Microsoft Edge WebView2 Runtime`
-2. 装 Windows 最新累积更新
-3. 删掉 `%APPDATA%\InterviewMonkey\EBWebView\Default\Cache`（只清页面缓存，不动 `Local Storage`，历史记录不受影响）
-4. 换一个 Windows 账户或降级到 pywebview 5.4 试
+## 第三方与致谢
 
-> 顺带一个容易踩的坑：WebView2 会缓存 `http://127.0.0.1:<port>/index.html`。改了 `renderer/index.html` 却发现界面没变，多半是缓存还在。清掉上面第 3 条的 `Cache`、`Code Cache`、`GPUCache` 三个目录即可（**不要删 `Local Storage`**，那是你的记录）。
+本项目使用或参考了 pywebview、WebView2、sherpa-onnx、FastAPI、Ollama、MediaPipe、DeepSeek/智谱等第三方组件或服务；相关名称和商标归各自所有者。项目与牛客网、微信、DeepSeek、智谱、Ollama、Google/MediaPipe 等均无隶属或背书关系。第三方资料的版权归原作者所有，本仓库不附带第三方题库原始数据。
 
-## 六、版本管理
+---
 
-`CHANGELOG.md` 记录每次更新，`versions/` 保存源码快照，`release.py` 一键发版。
+## 版本与更新
 
-```bash
-python release.py --show                                  # 查看当前版本
-python release.py --version 1.1.0 --note "流式 + 配置持久化"  # 发布新版本
-```
-
-## 七、Roadmap
-
-- [x] 配置持久化 + 启动自动检测（1.1.0）
-- [x] 流式输出 + 关键词先行 + 三级降级（1.1.0）
-- [x] VAD 断句阈值可调 + 前端四道门槛（1.1.0）
-- [ ] 系统音频回环采集（会议中对方的声音）
-- [ ] 说话人区分（diarization）
-- [ ] 打包成 Windows 安装包
-
-## 八、实时语音问答核心
-
-异步音频 → VAD → 流式 ASR → 问题检测 → 混合 RAG → LLM SSE → 三栏前端的独立运行说明见 [`README_REALTIME.md`](README_REALTIME.md)。该链路默认仅本地模式，云端传输必须显式确认。
+- `CHANGELOG.md`：版本变更记录
+- `versions/`：历史源码快照
+- GitHub Releases：Windows 单文件 exe 与版本说明
