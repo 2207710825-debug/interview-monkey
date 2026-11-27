@@ -46,6 +46,8 @@ jobs:
 
   asr-quality:
     # ASR 权重较大且属于离线本地资产；质量门禁在已准备模型的 Windows runner 上执行。
+    # 安全限制：self-hosted runner 只允许手动触发，禁止 push / pull_request 自动执行。
+    if: github.event_name == 'workflow_dispatch'
     runs-on: [self-hosted, Windows, X64, asr-models]
     needs: unit
     timeout-minutes: 45
