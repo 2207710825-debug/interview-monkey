@@ -1,7 +1,7 @@
 {
   "name": "interviewmonkey",
   "productName": "面试猴",
-  "version": "1.1.0",
+  "version": "1.2.1",
   "description": "面试猴 · 会议实时总结与疑问解答助手（全语音·零门槛）",
   "main": "src/main.js",
   "scripts": {

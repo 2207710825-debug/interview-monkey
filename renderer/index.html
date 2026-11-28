@@ -1962,6 +1962,14 @@ function cfgRefreshHint(){
     ? (ms.length ? "已安装："+ms.join(" / ")+"（填其中一个，留空自动选最小的）" : "未检测到已安装模型，请先执行：ollama pull qwen2.5:3b")
     : "";
 }
+function notifyRealtimeModelChanged(payload){
+  const frame=$("#aiRealtimeFrame");
+  try{
+    if(frame && frame.contentWindow){
+      frame.contentWindow.postMessage(Object.assign({type:"mh-config-saved"}, payload||{}), "*");
+    }
+  }catch(e){}
+}
 async function cfgSave(){
   if(!hasEngine()) return;
   const provider=$("#cfgProvider").value;
@@ -1974,7 +1982,20 @@ async function cfgSave(){
   try{
     const r=await window.pywebview.api.save_config(cfg);
     cfgPaint(r);
-    $("#cfgStatus").textContent="✅ 已保存到本地配置，下次打开自动生效 · 当前引擎："+r.llm_label;
+    const rr=r.realtime_reload;
+    if(rr && rr.ok && rr.configured===false){
+      $("#cfgStatus").textContent="✅ 已保存，但实时问答配置不完整："+(rr.error||"请检查模型设置");
+      notifyRealtimeModelChanged(rr);
+    }else if(rr && rr.ok){
+      const target=(rr.provider||provider)+(rr.model ? " / "+rr.model : "");
+      $("#cfgStatus").textContent="✅ 已保存，实时问答已立即切换到 "+target+"（无需重启）";
+      notifyRealtimeModelChanged(rr);
+    }else if(rr && rr.ok===false){
+      $("#cfgStatus").textContent="✅ 已保存，但实时问答切换失败："+(rr.error||"未知错误")+"；请重开应用或查看日志";
+      notifyRealtimeModelChanged(rr);
+    }else{
+      $("#cfgStatus").textContent="✅ 已保存到本地配置，下次打开自动生效 · 当前引擎："+r.llm_label;
+    }
     aiLoadStatus();
   }catch(e){ $("#cfgStatus").textContent="保存失败："+e.message; }
 }

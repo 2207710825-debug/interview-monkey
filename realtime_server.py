@@ -74,6 +74,21 @@ class BackgroundRealtimeServer:
         self.url = f"http://127.0.0.1:{self.port}/"
         return self.url
 
+    def reload_llm_config(self) -> dict:
+        """设置页保存后立即把新模型推给已启动的实时服务。
+
+        该方法由 pywebview 的 js_api 线程调用，因此不能依赖请求上下文；
+        FastAPI app.state 上的 reload 回调内部有锁，并原地替换 provider。
+        """
+        state = getattr(self.app, "state", None)
+        callback = getattr(state, "reload_llm_config", None)
+        if not callable(callback):
+            return {"ok": False, "changed": False, "error": "实时服务未启用动态模型配置"}
+        try:
+            return dict(callback(force=True))
+        except Exception as exc:
+            return {"ok": False, "changed": False, "error": str(exc)}
+
     def stop(self) -> None:
         if self.server is not None:
             self.server.should_exit = True

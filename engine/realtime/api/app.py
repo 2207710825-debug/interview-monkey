@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 import os
+import threading
 from dataclasses import asdict, is_dataclass
 from enum import Enum
 from pathlib import Path
@@ -22,7 +23,7 @@ from ..asr.glossary import append_alias, record_correction, suggest_alias
 from ..asr.hotwords import load_hotwords
 from ..asr.postprocess import LocalLLMTranscriptCorrector
 from ..asr.termbank import build_termbank
-from ..llm.providers import OpenAICompatLLMProvider
+from ..llm.providers import OpenAICompatLLMProvider, UnavailableLLMProvider
 from ..llm.service import RealtimeAnswerService
 from ..latency import LATENCY_METRICS
 from ..mocks import MockLLMProvider
@@ -84,19 +85,29 @@ def _plain(value):
     return value
 
 
+def _app_config_path() -> Path:
+    """桌面设置页写入的 config.json 路径。"""
+    appdata = os.environ.get("APPDATA")
+    return (
+        Path(appdata) / "InterviewMonkey" / "config.json"
+        if appdata
+        else Path.home() / ".config" / "InterviewMonkey" / "config.json"
+    )
+
+
 def _app_llm_config() -> dict | None:
     """读取桌面 App 设置页选择的模型。
 
     返回 None 表示没有可用的 App 配置，继续使用 config/config.yaml。
     用户在设置页明确选择云端 provider（如 deepseek）视为同意把“问题文本”发送到
     云端；音频仍只在本机 ASR，不会上传。
+
+    配置不完整时（例如选了 DeepSeek 却没保存 Key）**不再静默回落到
+    config.yaml 的 Ollama**。否则状态栏会显示 ollama，真正的错误则被伪装成
+    “Ollama 连不上”，用户完全无从排查。这里保留用户选择的 provider，并用
+    ``configured=False`` 明确告诉界面缺什么。
     """
-    appdata = os.environ.get("APPDATA")
-    path = (
-        Path(appdata) / "InterviewMonkey" / "config.json"
-        if appdata
-        else Path.home() / ".config" / "InterviewMonkey" / "config.json"
-    )
+    path = _app_config_path()
     if not path.is_file():
         return None
     try:
@@ -123,13 +134,41 @@ def _app_llm_config() -> dict | None:
             "api_key": "",
             "trust_env": False,
             "cloud_text": False,
+            "configured": True,
+            "error": "",
+            "source": "app",
         }
 
     preset = legacy_llm.PROVIDERS.get(provider)
-    if preset is None or not key:
-        return None
+    if preset is None:
+        return {
+            "provider": provider,
+            "base_url": str(view.get("base_url") or "").strip(),
+            "model": str(view.get("model") or "").strip(),
+            "api_key": "",
+            "trust_env": True,
+            "cloud_text": True,
+            "configured": False,
+            "error": f"无法识别模型服务商 {provider!r}，请在设置中重新选择",
+            "source": "app",
+        }
     base_url = str(view.get("base_url") or "").strip() or preset["base_url"]
     model = str(view.get("model") or "").strip() or preset["model"]
+    if not key:
+        return {
+            "provider": provider,
+            "base_url": base_url,
+            "model": model,
+            "api_key": "",
+            "trust_env": True,
+            "cloud_text": True,
+            "configured": False,
+            "error": (
+                f"已选择 {preset['name']}（{model}），但还没有保存 API Key。"
+                "请到「模型设置」填写 Key 并点保存。"
+            ),
+            "source": "app",
+        }
     return {
         "provider": provider,
         "base_url": base_url,
@@ -137,6 +176,9 @@ def _app_llm_config() -> dict | None:
         "api_key": key,
         "trust_env": True,
         "cloud_text": True,
+        "configured": True,
+        "error": "",
+        "source": "app",
     }
 
 
@@ -192,6 +234,193 @@ def _load_notes_chunks() -> list[Chunk] | None:
     return chunks or None
 
 
+def _llm_metadata(cfg, app_llm: dict | None) -> dict:
+    """状态栏/SSE 使用的模型元数据，明确标注配置是否完整。"""
+    if app_llm is not None:
+        return {
+            "provider": str(app_llm.get("provider") or ""),
+            "base_url": str(app_llm.get("base_url") or ""),
+            "model": str(app_llm.get("model") or ""),
+            "cloud_text": bool(app_llm.get("cloud_text", False)),
+            "configured": bool(app_llm.get("configured", True)),
+            "error": str(app_llm.get("error") or ""),
+            "source": "app",
+        }
+    return {
+        "provider": cfg.llm.provider,
+        "base_url": cfg.llm.base_url,
+        "model": cfg.llm.model,
+        "cloud_text": cfg.llm.provider not in {"mock", "ollama", "local"},
+        "configured": True,
+        "error": "",
+        "source": "yaml",
+    }
+
+
+def _build_llm_runtime(cfg, app_llm: dict | None, hotwords):
+    """按 App 设置或 config.yaml 构建 LLM 与本地纠错器。"""
+    transcript_corrector = None
+    if app_llm is not None:
+        if not app_llm.get("configured", True):
+            message = str(app_llm.get("error") or "模型配置不完整，请到「模型设置」检查")
+            return UnavailableLLMProvider(
+                message,
+                provider=str(app_llm.get("provider") or ""),
+                model=str(app_llm.get("model") or ""),
+            ), None
+        llm = OpenAICompatLLMProvider(
+            app_llm["base_url"],
+            app_llm["model"],
+            app_llm["api_key"],
+            temperature=cfg.llm.temperature,
+            timeout_seconds=cfg.llm.timeout_seconds,
+            trust_env=bool(app_llm.get("trust_env", True)),
+        )
+    elif cfg.llm.provider == "mock":
+        llm = MockLLMProvider([
+            "**结论**：离线 Mock 闭环已运行。\n",
+            "**要点**：\n- 使用 **异步队列** 解耦\n- 通过 **RRF** 融合检索\n",
+            "- 使用 **SSE** 流式输出\n**关键词**：**异步队列** / **RRF** / **SSE**",
+        ])
+    else:
+        llm = OpenAICompatLLMProvider(
+            cfg.llm.base_url,
+            cfg.llm.model,
+            cfg.llm_api_key,
+            temperature=cfg.llm.temperature,
+            timeout_seconds=cfg.llm.timeout_seconds,
+        )
+
+    metadata = _llm_metadata(cfg, app_llm)
+    endpoint_host = urlparse(metadata["base_url"]).hostname
+    if (
+        cfg.postprocess.llm_correction.enabled
+        and metadata["provider"] in {"ollama", "local"}
+        and endpoint_host in {"localhost", "127.0.0.1", "::1"}
+    ):
+        transcript_corrector = LocalLLMTranscriptCorrector(
+            llm,
+            hotwords,
+            confidence_threshold=cfg.postprocess.llm_correction.confidence_threshold,
+        )
+    return llm, transcript_corrector
+
+
+def _schedule_provider_close(app: FastAPI, provider) -> None:
+    """替换 provider 后延迟释放旧连接，避免打断正在生成的回答。"""
+    close = getattr(provider, "close", None)
+    if not callable(close):
+        return
+
+    async def close_later():
+        await asyncio.sleep(30)
+        try:
+            await close()
+        except Exception:
+            pass
+
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = getattr(app.state, "event_loop", None)
+        if loop is None or not loop.is_running():
+            return
+        asyncio.run_coroutine_threadsafe(close_later(), loop)
+        return
+    loop.create_task(close_later())
+
+
+class LLMConfigManager:
+    """在不重启应用的情况下切换实时问答使用的模型。
+
+    背景：桌面主进程在 import ``realtime_server`` 时就创建了 FastAPI app。
+    用户随后在「模型设置」保存 DeepSeek Key 时，旧实现只在下次启动读取配置，
+    于是实时页继续显示并请求 config.yaml 里的本地 Ollama，报
+    “All connection attempts failed”。这里同时做两件事：
+
+    1. 监测 config.json / config.yaml 的指纹，在 HTTP 请求前自动重新加载；
+    2. 提供 ``reload()`` 给主进程的保存按钮立即调用。
+
+    只替换 LLM provider 和纠错器，保留检索器和会话上下文；正在播放的音频
+    管线持有同一个 service 对象，因此也会立即用上新模型。
+    """
+
+    def __init__(self, app: FastAPI, service, cfg, config_path: str | Path | None = None):
+        self.app = app
+        self.service = service
+        self._cfg = cfg
+        self._config_path = Path(config_path or PROJECT_ROOT / "config" / "config.yaml")
+        self._lock = threading.RLock()
+        self.last_error = ""
+        self._fingerprint = self._fingerprint_now()
+
+    def _fingerprint_now(self) -> tuple:
+        parts = []
+        for path in (_app_config_path(), self._config_path):
+            try:
+                stat = path.stat()
+                parts.append((str(path), stat.st_mtime_ns, stat.st_size))
+            except OSError:
+                parts.append((str(path), None, None))
+        return tuple(parts)
+
+    def snapshot(self) -> dict:
+        meta = getattr(self.service, "app_llm", {}) or {}
+        return {
+            "provider": meta.get("provider", ""),
+            "model": meta.get("model", ""),
+            "configured": bool(meta.get("configured", True)),
+            "error": meta.get("error") or self.last_error,
+            "source": meta.get("source", ""),
+        }
+
+    def reload(self, *, force: bool = False) -> dict:
+        with self._lock:
+            fingerprint = self._fingerprint_now()
+            if not force and fingerprint == self._fingerprint:
+                return {"ok": True, "changed": False, **self.snapshot()}
+            self._fingerprint = fingerprint
+            try:
+                cfg = load_config(self._config_path)
+                app_llm = _app_llm_config()
+                # 与启动路径一致：明确选择 App 内云端模型时视为用户同意文本出网。
+                if app_llm is None:
+                    cfg.assert_cloud_allowed()
+                llm, corrector = _build_llm_runtime(
+                    cfg, app_llm, getattr(self.service, "hotwords", ()),
+                )
+                metadata = _llm_metadata(cfg, app_llm)
+                old_provider = getattr(self.service, "llm_provider", None)
+                replace = getattr(self.service, "replace_llm", None)
+                if callable(replace):
+                    replace(llm, transcript_corrector=corrector, app_llm=metadata)
+                else:  # 兼容第三方/测试用的轻量 service
+                    self.service.llm_provider = llm
+                    self.service.transcript_corrector = corrector
+                    self.service.app_llm = metadata
+                self._cfg = cfg
+                self.last_error = ""
+                if old_provider is not llm:
+                    _schedule_provider_close(self.app, old_provider)
+                log.info(
+                    "llm_config_reloaded provider=%s model=%s configured=%s",
+                    metadata["provider"], metadata["model"], metadata["configured"],
+                )
+                return {"ok": True, "changed": True, **self.snapshot()}
+            except Exception as exc:
+                self.last_error = f"模型配置加载失败：{exc}"
+                log.warning(
+                    "llm_config_reload_failed error=%s detail=%s",
+                    type(exc).__name__, exc,
+                )
+                return {
+                    "ok": False,
+                    "changed": False,
+                    **self.snapshot(),
+                    "error": self.last_error,
+                }
+
+
 def build_default_service(
     config_path: str | Path | None = None,
     *,
@@ -228,43 +457,7 @@ def build_default_service(
     except Exception as exc:
         log.warning("termbank_build_failed error=%s", type(exc).__name__)
         hotwords = list(manual_hotwords)
-    if app_llm is not None:
-        llm = OpenAICompatLLMProvider(
-            app_llm["base_url"],
-            app_llm["model"],
-            app_llm["api_key"],
-            temperature=cfg.llm.temperature,
-            timeout_seconds=cfg.llm.timeout_seconds,
-            trust_env=app_llm["trust_env"],
-        )
-    elif cfg.llm.provider == "mock":
-        llm = MockLLMProvider([
-            "**结论**：离线 Mock 闭环已运行。\n",
-            "**要点**：\n- 使用 **异步队列** 解耦\n- 通过 **RRF** 融合检索\n",
-            "- 使用 **SSE** 流式输出\n**关键词**：**异步队列** / **RRF** / **SSE**",
-        ])
-    else:
-        llm = OpenAICompatLLMProvider(
-            cfg.llm.base_url,
-            cfg.llm.model,
-            cfg.llm_api_key,
-            temperature=cfg.llm.temperature,
-            timeout_seconds=cfg.llm.timeout_seconds,
-        )
-    transcript_corrector = None
-    llm_base_url = app_llm["base_url"] if app_llm else cfg.llm.base_url
-    llm_provider = app_llm["provider"] if app_llm else cfg.llm.provider
-    endpoint_host = urlparse(llm_base_url).hostname
-    if (
-        cfg.postprocess.llm_correction.enabled
-        and llm_provider in {"ollama", "local"}
-        and endpoint_host in {"localhost", "127.0.0.1", "::1"}
-    ):
-        transcript_corrector = LocalLLMTranscriptCorrector(
-            llm,
-            hotwords,
-            confidence_threshold=cfg.postprocess.llm_correction.confidence_threshold,
-        )
+    llm, transcript_corrector = _build_llm_runtime(cfg, app_llm, hotwords)
     service = RealtimeAnswerService(
         retriever,
         llm,
@@ -277,12 +470,7 @@ def build_default_service(
         hotwords=hotwords,
         generic_product_skip_score=cfg.rag.generic_product_skip_score,
     )
-    service.app_llm = app_llm or {
-        "provider": cfg.llm.provider,
-        "base_url": cfg.llm.base_url,
-        "model": cfg.llm.model,
-        "cloud_text": cfg.llm.provider not in {"mock", "ollama", "local"},
-    }
+    service.app_llm = _llm_metadata(cfg, app_llm)
     service.notes_chunks = len(notes_chunks or [])
     service.extra_hotwords = tuple(termbank.hotwords) if termbank else ()
     service.asr_terms = termbank.decoder_count if termbank else 0
@@ -304,6 +492,8 @@ def create_app(
     cfg = load_config(PROJECT_ROOT / "config" / "config.yaml")
     app.state.mock_mode = mock
     app.state.history_store = history_store
+    app.state.event_loop = None
+    app.state.llm_config_manager = None
     if mock:
         fixtures = load_fixtures(PROJECT_ROOT)
         settings = mock_settings or MockSettings.from_env()
@@ -314,6 +504,7 @@ def create_app(
             fixtures, settings, PROJECT_ROOT / "logs" / "mock_protocol.jsonl",
         )
     else:
+        owns_service = service is None and runtime is None and use_app_config
         app.state.answer_service = service or build_default_service(
             use_app_config=use_app_config,
         )
@@ -327,11 +518,47 @@ def create_app(
             transcript_logger=app.state.history_store,
             extra_hotwords=getattr(app.state.answer_service, "extra_hotwords", ()),
         )
+        if owns_service:
+            app.state.llm_config_manager = LLMConfigManager(
+                app, app.state.answer_service, cfg,
+            )
     configured_glossary = Path(glossary_path or cfg.asr.hotwords_path)
     if not configured_glossary.is_absolute():
         configured_glossary = PROJECT_ROOT / configured_glossary
     app.state.glossary_path = configured_glossary
     app.state.glossary_corrections_path = configured_glossary.with_name("glossary.corrections.jsonl")
+
+    def reload_llm_config(*, force: bool = True) -> dict:
+        """供桌面主进程在设置保存后立即调用（可跨线程）。"""
+        manager = app.state.llm_config_manager
+        if manager is None:
+            return {
+                "ok": False,
+                "changed": False,
+                "error": "当前实时服务使用外部注入的模型实例，未启用动态配置",
+            }
+        result = manager.reload(force=force)
+        # 采集运行时持有同一个 service；显式赋值避免自定义运行时遗漏。
+        if getattr(app.state, "capture_runtime", None) is not None:
+            app.state.capture_runtime.answer_service = app.state.answer_service
+        return result
+
+    app.state.reload_llm_config = reload_llm_config
+
+    @app.middleware("http")
+    async def _reload_llm_config_before_request(request: Request, call_next):
+        # 保存按钮走 js_api 线程时需要一个事件循环来关闭旧 provider；这里记录
+        # 首个 HTTP 请求所在循环。没有请求时旧 provider 尚未创建连接，无需关闭。
+        app.state.event_loop = asyncio.get_running_loop()
+        manager = app.state.llm_config_manager
+        if manager is not None:
+            result = manager.reload()
+            if not result.get("ok"):
+                log.warning(
+                    "llm_config_reload_failed_on_request error=%s",
+                    result.get("error", ""),
+                )
+        return await call_next(request)
 
     @app.get("/")
     async def index():
@@ -340,6 +567,7 @@ def create_app(
     @app.get("/api/status")
     async def status():
         llm_meta = getattr(app.state.answer_service, "app_llm", {}) or {}
+        manager = app.state.llm_config_manager
         notes_count = int(getattr(app.state.answer_service, "notes_chunks", 0) or 0)
         return {
             "ok": True,
@@ -348,6 +576,11 @@ def create_app(
             "llm_provider": llm_meta.get("provider", cfg.llm.provider),
             "llm_model": llm_meta.get("model", cfg.llm.model),
             "cloud_text": bool(llm_meta.get("cloud_text", False)),
+            "llm_configured": bool(llm_meta.get("configured", True)),
+            "llm_config_error": str(
+                llm_meta.get("error") or (getattr(manager, "last_error", "") if manager else "")
+            ),
+            "llm_config_source": llm_meta.get("source", ""),
             "notes_mode": notes_count > 0,
             "notes_chunks": notes_count,
             "asr_terms": int(getattr(app.state.answer_service, "asr_terms", 0) or 0),

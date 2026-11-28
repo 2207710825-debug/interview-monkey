@@ -11,7 +11,7 @@
 ## 功能
 
 - **实时语音转写**：WASAPI 系统回环 / 麦克风采集，WebRTC VAD 分段，sherpa-onnx 流式识别 + 第二遍 SenseVoice 校准；支持中英混合技术词热词。
-- **实时问答工作台**：问题自动识别、Q&A 时间线、上下文侧栏、来源引用、转写纠错、会话历史、手动提问、停止生成/重新回答。
+- **实时问答工作台**：问题自动识别、Q&A 时间线、上下文侧栏、来源引用、转写纠错、会话历史、手动提问、停止生成/重新回答；切换模型无需重启。
 - **本地知识库**：个人笔记、牛客题、微信资料、XMind 思维导图、PDF 资料均可导入；BM25 + 向量混合检索，只在本机建立索引。
 - **练习题库**：内置题库 + 本地导入题库；支持语音或文本作答、评分、参考答案、练习记录。
 - **会议纪要**：关键词、数字/金额/时间、结论、待办自动提取，可复制/下载。
@@ -22,7 +22,7 @@
 
 ## 快速开始（直接使用）
 
-1. 打开 [Releases](https://github.com/2207710825-debug/interview-monkey/releases/latest)，下载 `InterviewMonkey-v1.2.0.exe`（或对应最新版本）。
+1. 打开 [Releases](https://github.com/2207710825-debug/interview-monkey/releases/latest)，下载 `InterviewMonkey-v1.2.1.exe`（或对应最新版本）。
 2. 系统要求：Windows 10/11 x64，已安装 **Microsoft Edge WebView2 Runtime**（Win11 通常自带）。
 3. 双击运行。首次使用在「模型设置」中填写 DeepSeek Key，或启动本地 Ollama 后选择 Ollama；不填 Key 也能使用本地规则兜底和练习题库。
 4. 需要实时问答时，在「智能问答」页选择音源（系统声音 / 麦克风），点击开始监听。
@@ -146,7 +146,7 @@ python -m venv .venv
 .venv-pack\Scripts\python.exe -m pytest tests -q
 ```
 
-当前回归结果：**178 passed，177 subtests passed**。覆盖实时历史/SSE API、知识库加载、题库合并、术语抽取、检索、导入解析和窗口控制。
+当前回归结果：**184 passed，177 subtests passed**。覆盖实时历史/SSE API、知识库加载、题库合并、术语抽取、检索、导入解析、模型配置热切换和窗口控制。
 
 ---
 

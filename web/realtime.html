@@ -465,12 +465,15 @@
     const provider = merged.llm_provider || "";
     const model = merged.llm_model || "";
     const label = provider ? provider + (model ? " / " + model : "") : "--";
-    $("#llmState").textContent = label;
-    $("#llmState2").textContent = label;
+    const configWarning = merged.llm_config_error
+      ? " · ⚠ 配置不完整"
+      : merged.llm_configured === false ? " · ⚠ 未配置" : "";
+    $("#llmState").textContent = label + configWarning;
+    $("#llmState2").textContent = label + configWarning;
     const badge = $("#modeBadge");
-    badge.title = merged.cloud_text
+    badge.title = merged.llm_config_error || (merged.cloud_text
       ? "音频仅在本机 ASR；问题文本会发送到云端模型"
-      : "全部本地处理";
+      : "全部本地处理");
     if (merged.notes_chunks !== undefined) {
       $("#notesState").textContent = merged.notes_mode
         ? merged.notes_chunks + " 段"
@@ -504,6 +507,18 @@
       statusRefreshInFlight = false;
     }
   }
+
+  // 主界面保存模型设置后通过 iframe postMessage 通知这里立即刷新。
+  // 服务端在保存时已原地替换 provider，这里只负责把状态栏和提示更新掉。
+  window.addEventListener("message", (event) => {
+    if (event.source !== window.parent) return;
+    const data = event.data || {};
+    if (data.type !== "mh-config-saved") return;
+    refreshStatus();
+    if (data.ok !== false) {
+      toast("模型设置已更新：" + (data.provider || "") + (data.model ? " / " + data.model : ""), "ok");
+    }
+  });
 
   function setCaptureUI(capture) {
     const active = capture === "capturing" || capture === "starting";

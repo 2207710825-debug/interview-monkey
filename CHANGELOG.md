@@ -3,7 +3,16 @@
 > 版本号遵循语义化版本：`主版本.次版本.修订号`（major.minor.patch）
 > 每次发版用 `python release.py --version x.y.z --note "..."` 自动记录，同时快照源码到 `versions/` 目录。
 
-## [未发布]
+## [1.2.1] - 2026-11-28
+
+### 修复 —— 导入 API Key 后实时问答仍显示 Ollama / 连接失败
+- 根因：桌面主进程在导入 `realtime_server` 时就创建了实时 FastAPI app；设置页保存 DeepSeek Key 后，旧服务仍持有启动时的 `config.yaml` Ollama provider，直到重启应用才生效
+- 设置保存后通过 `BackgroundRealtimeServer.reload_llm_config()` 原地热切换 provider，无需重启；正在运行的采集管线共用同一个 service 对象，也会立即使用新模型
+- 实时服务增加 config.json / config.yaml 指纹监测，在每次 HTTP 请求前自动重载；直接改配置文件也能生效
+- 明确区分“配置不完整”和“连接失败”：选择 DeepSeek 但没保存 Key 时不再静默退回 Ollama，状态栏显示 `⚠ 配置不完整`，回答时提示去设置页填写 Key
+- LLM 网络错误现在包含实际请求的 endpoint 和模型名（不含 Key），避免再把云端配置问题误认为本地 Ollama 连接失败
+- 设置页保存后通过 iframe `postMessage` 立即刷新实时页模型标签，不再显示“下次打开自动生效”
+- 新增 `tests/test_app_llm_config.py` 覆盖 provider 选择、缺 Key、热切换和可操作错误
 
 ### 新增 —— Windows 敏感窗口捕获保护
 - pywebview 主窗口在 `before_show` 阶段设置 Display Affinity，并在恢复、跨屏、句柄重建后重申

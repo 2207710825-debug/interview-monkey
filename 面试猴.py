@@ -115,7 +115,7 @@ def _push(js_code):
 class Api:
     """暴露给渲染端的受控 API（类比 Electron 的 contextBridge）"""
 
-    def __init__(self, realtime_url=""):
+    def __init__(self, realtime_url="", on_config_saved=None):
         from engine import Assistant
         from engine import llm as llm_mod
         from engine.config_store import ConfigStore
@@ -129,6 +129,7 @@ class Api:
             bank_path=resource_path(os.path.join("renderer", "bank.js")),
             top_k=self.cfg.get("top_k", 3),
         )
+        self._on_config_saved = on_config_saved
         self._stream_lock = threading.Lock()
         self._stream_seq = 0        # 每次提问自增，前端据此丢弃过期片段
         self._boot_state = {"ready": False, "note": ""}
@@ -226,8 +227,21 @@ class Api:
         self.cfg = self.store.save(patch)
         self.assistant.top_k = self.cfg.get("top_k", 3)
         self.assistant.llm = llm_mod.build_llm_from_config(self.cfg)
+        # 实时问答运行在独立的后台 FastAPI 里；它启动时已经读过一次配置。
+        # 保存后必须立刻把新 provider 推给它，否则页面会继续显示/请求旧的
+        # Ollama，用户看到的就是“导入 API 后仍连不上”。
+        reload_result = None
+        callback = self._on_config_saved
+        if callable(callback):
+            try:
+                reload_result = callback()
+                _log("[config] realtime llm reload: %s" % (reload_result,))
+            except Exception as exc:
+                reload_result = {"ok": False, "changed": False, "error": str(exc)}
+                _log("[config] realtime llm reload failed: %s" % exc)
         view = self.get_config()
         view["saved"] = True
+        view["realtime_reload"] = reload_result
         return view
 
     def probe_backends(self):
@@ -1236,7 +1250,12 @@ def main():
     except Exception as e:
         _log("[realtime] embedded service failed: %s" % e)
 
-    api = Api(realtime_url=realtime_url)
+    api = Api(
+        realtime_url=realtime_url,
+        on_config_saved=(
+            realtime_runtime.reload_llm_config if realtime_runtime is not None else None
+        ),
+    )
     api.preheat_asr()
     api.preheat_llm()
     window_title = "面试猴 · 会议实时总结助手"

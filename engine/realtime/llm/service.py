@@ -49,6 +49,17 @@ class RealtimeAnswerService:
     def _context(self, session_id: str) -> ConversationContext:
         return self._contexts.setdefault(session_id, ConversationContext())
 
+    def replace_llm(self, llm_provider, *, transcript_corrector=None, app_llm=None) -> None:
+        """原地替换模型，保留检索器、热词和会话上下文。
+
+        实时采集管线持有的是同一个 service 对象；在这里替换后，后续自动
+        识别出的问题会立即使用新 provider，不需要重启实时服务。
+        """
+        self.llm_provider = llm_provider
+        self.transcript_corrector = transcript_corrector
+        if app_llm is not None:
+            self.app_llm = dict(app_llm)
+
     async def _retrieve_queries(
         self,
         queries: Sequence[str],

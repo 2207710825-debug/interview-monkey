@@ -44,8 +44,9 @@ class OpenAICompatLLMProvider:
         # 本机 Ollama/网关绝不能走系统代理：Windows 的 httpx 会读取注册表代理，
         # 127.0.0.1 也可能被转发到 10808，导致 503 或 4 秒以上的额外延迟。
         host = urlparse(self.base_url).hostname
+        self.is_local = host in {"127.0.0.1", "localhost", "::1"}
         self.trust_env = (
-            host not in {"127.0.0.1", "localhost", "::1"}
+            not self.is_local
             if trust_env is None else trust_env
         )
         self._client = None
@@ -62,14 +63,26 @@ class OpenAICompatLLMProvider:
             )
         return self._client
 
-    @staticmethod
-    def _classify(exc: Exception) -> LLMProviderError:
+    def _classify(self, exc: Exception) -> LLMProviderError:
         try:
             import httpx
             if isinstance(exc, httpx.TimeoutException):
-                return LLMProviderError("timeout", "LLM 请求超时", True)
+                return LLMProviderError(
+                    "timeout",
+                    f"LLM 请求超时（{self.base_url}，{self.model}）",
+                    True,
+                )
             if isinstance(exc, httpx.NetworkError):
-                return LLMProviderError("network", f"LLM 网络错误: {exc}", True)
+                hint = (
+                    "请确认本地 Ollama 已启动，且模型已下载"
+                    if self.is_local
+                    else "请检查网络、代理设置和 API 地址"
+                )
+                return LLMProviderError(
+                    "network",
+                    f"LLM 网络错误（{self.base_url}，{self.model}）：{exc}；{hint}",
+                    True,
+                )
         except ImportError:
             pass
         if isinstance(exc, LLMProviderError):
@@ -127,3 +140,24 @@ class OpenAICompatLLMProvider:
         if self._client is not None:
             client, self._client = self._client, None
             await client.aclose()
+
+
+class UnavailableLLMProvider:
+    """配置不完整时的占位后端。
+
+    不要在用户明确选择了云端模型但没保存 Key 时偷偷退回 Ollama：那会让界面
+    显示错误的 provider，并把“缺少 Key”伪装成“Ollama 连不上”。这里保留用户
+    的选择，在真正回答时给出可操作的配置错误。
+    """
+
+    def __init__(self, message: str, *, provider: str = "", model: str = ""):
+        self.message = str(message or "模型配置不完整")
+        self.provider = provider
+        self.model = model
+
+    async def stream(self, messages, cancel=None) -> AsyncIterator[str]:
+        raise LLMProviderError("config", self.message, False)
+        yield ""  # pragma: no cover - 让函数保持异步生成器语义
+
+    async def close(self) -> None:
+        return None
